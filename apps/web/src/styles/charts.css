@@ -1,22 +1,27 @@
-.chart { position: relative; width: 100%; padding-top: 34px; }
-.bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; height: 124px; }
+.chart { position: relative; width: 100%; padding-top: 26px; }
+.bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; height: 82px; }
 .bar-col { display: flex; flex-direction: column; align-items: center; min-width: 0; cursor: pointer; }
 .bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
-.bar-rect { position: relative; width: 100%; max-width: 16px; background: #eeeafb; border-radius: 6px 6px 3px 3px; transition: background 0.18s, height 0.35s; }
-.bar-col:hover .bar-rect { background: #d9cffa; }
+.bar-rect { position: relative; width: 100%; max-width: 14px; background: #d4d7dd; border-radius: 3px 3px 0 0; transition: background 0.12s, height 0.25s; }
+.bar-rect-zero { background: var(--line-2); }
+.bar-col:hover .bar-rect { background: #bfc3cb; }
 .bar-col-on .bar-rect, .bar-col-on:hover .bar-rect { background: var(--brand); }
-.axis-label { font-size: 9px; color: var(--ink-3); margin-top: 8px; white-space: nowrap; line-height: 1; }
-.bar-tip, .line-tip { position: absolute; transform: translate(-50%, -100%); background: #1f1b3a; color: #fff; font-size: 11px; font-weight: 500; padding: 6px 10px; border-radius: 9px; white-space: nowrap; pointer-events: none; box-shadow: 0 10px 24px -8px rgba(31, 27, 58, 0.55); z-index: 2; }
-.bar-tip { left: 50%; top: -10px; }
-.bar-tip::after, .line-tip::after { content: ""; position: absolute; left: 50%; bottom: -3px; width: 8px; height: 8px; background: #1f1b3a; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
-.line-tip { transition: left 0.18s, top 0.18s; }
-.line-tip small { display: block; color: #b8b3d8; font-size: 10px; font-weight: 400; }
-.line-wrap { position: relative; height: 104px; }
+.axis-label { font-size: 10px; color: var(--ink-3); margin-top: 6px; white-space: nowrap; line-height: 10px; font-variant-numeric: tabular-nums; }
+.bar-tip, .line-tip { position: absolute; transform: translate(-50%, -100%); background: #1c1d21; color: #fff; font-size: 11.5px; font-weight: 500; line-height: 1.35; padding: 4px 8px; border-radius: var(--radius-md); white-space: nowrap; pointer-events: none; box-shadow: 0 2px 8px rgba(20, 21, 26, 0.2); z-index: 2; font-variant-numeric: tabular-nums; }
+.bar-tip { left: 50%; top: -8px; }
+.bar-tip::after, .line-tip::after { content: ""; position: absolute; left: 50%; bottom: -3px; width: 6px; height: 6px; background: #1c1d21; transform: translateX(-50%) rotate(45deg); border-radius: 1px; }
+.line-tip { transition: left 0.12s, top 0.12s; }
+.line-tip small { margin-left: 6px; color: #9aa0ab; font-size: 11px; font-weight: 400; }
+.line-wrap { position: relative; height: 64px; }
 .line-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.line-path { fill: none; stroke: var(--crimson); stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.grid-line { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
-.line-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; border: 2px solid var(--crimson); box-shadow: 0 0 0 4px rgba(229, 54, 90, 0.15); pointer-events: none; transition: left 0.18s, top 0.18s; }
+.line-path { fill: none; stroke: var(--ink-2); stroke-width: 1.5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.grid-line { stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.line-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--surface); border: 2px solid var(--brand); pointer-events: none; transition: left 0.12s, top 0.12s; }
 .line-hits { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); }
 .line-hits div { cursor: pointer; }
-.line-axis { display: grid; grid-template-columns: repeat(12, 1fr); margin-top: 8px; }
-.line-axis span { font-size: 9px; color: var(--ink-3); text-align: center; white-space: nowrap; }
+.line-axis { display: grid; grid-template-columns: repeat(12, 1fr); margin-top: 6px; }
+.line-axis span { font-size: 10px; line-height: 10px; color: var(--ink-3); text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 700px) {
+  .bar-col:nth-child(even) .axis-label, .line-axis span:nth-child(even) { visibility: hidden; }
+}

@@ -55,7 +55,7 @@ export function BoardCard({ card, status, warnings, flash, selected, expanded, n
       <header className="bcard-head">
         <button type="button" className="bcard-who" onClick={stop(() => onPerson(person))} title={`Show only ${person}`}>
           <span className="bcard-avatar">
-            <Avatar name={person} size={28} />
+            <Avatar name={person} size={20} />
             {isLive(card, now) && <i className="live-dot" title="Reported in the last 5 minutes" />}
           </span>
           <span className="bcard-name">
@@ -69,7 +69,7 @@ export function BoardCard({ card, status, warnings, flash, selected, expanded, n
       {lead.summary && <p className="bcard-summary">{lead.summary}</p>}
       {blocker && (
         <p className={`bcard-blocker${tone === "stuck" ? " bcard-blocker-red" : ""}`}>
-          <OctagonAlert size={14} />
+          <OctagonAlert size={13} />
           <span>
             {blocker}
             {lead.blockers.length > 1 && <em> +{lead.blockers.length - 1} more</em>}
@@ -86,11 +86,11 @@ export function BoardCard({ card, status, warnings, flash, selected, expanded, n
         </div>
       )}
       <footer className="bcard-foot">
-        <span className="bcard-status"><StatusIcon tone={tone} size={14} />{sentence(statusLine(lead.status, lead.status_since, lead.last_seen_at, now))}</span>
+        <span className="bcard-status"><StatusIcon tone={tone} size={13} />{sentence(statusLine(lead.status, lead.status_since, lead.last_seen_at, now))}</span>
         {card.others.length > 0 && (
           <button type="button" className={`bcard-more${trouble > 0 ? " bcard-more-hot" : ""}`} aria-expanded={expanded} onClick={stop(onToggle)}>
             {expanded ? "Hide others" : `+${plural(card.others.length, "other session")}`}
-            <ChevronDown size={13} className="chev" />
+            <ChevronDown size={12} className="chev" />
           </button>
         )}
       </footer>

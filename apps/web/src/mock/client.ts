@@ -3,6 +3,9 @@ import type { MeshClient, ModulesResponse } from "../api";
 import { isGithubUrl } from "../projects";
 import raw from "./snapshot.json";
 import { backdate, minutesFor } from "./spread";
+import { personBlocks, reportResponse } from "../views/ask/clientReport";
+import { explicitPeriod, PeriodId, personIn, reportKindOf } from "../views/ask/intent";
+import { buildReport } from "../views/ask/report";
 
 interface Space {
   feed: FeedResponse;
@@ -52,6 +55,32 @@ function answerFor(ws: string, question: string): AskResponse {
   return { answer: `Matching records:\n${lines.join("\n")}`, no_record: false, citations: hits.map((e) => e.event_id ?? ""), sources: hits, knowledge: [], plan, degraded: "Demo mode: offline sample data, no live server." };
 }
 
+function askFor(ws: string, asked: string): AskResponse {
+  const started = Date.now();
+  const s = space(ws);
+  const prefix = /^For (.+?): ([\s\S]*)$/.exec(asked);
+  const question = prefix?.[2] ?? asked;
+  const period = (prefix ? explicitPeriod(prefix[1]!.toLowerCase()) : null) ?? PeriodId.week;
+  const names = s.people.people.map((p) => p.person);
+  const person = personIn(question, names);
+  const spec = reportKindOf(question, period);
+  const now = Date.now();
+  if (spec) {
+    const inputs = { items: s.feed.items, warnings: s.warnings.warnings, people: s.people.people, now };
+    const events = Object.values(s.events).map((e) => e.event);
+    return reportResponse(buildReport(inputs, { ...spec, person }), events, started, { ...spec, person });
+  }
+  const answer = answerFor(ws, question);
+  const summary = s.people.people.find((p) => p.person === person);
+  const ms = Math.max(1, Date.now() - started);
+  const steps = [{ label: "Searched shared reports", tool: "search_reports", ms: Math.round(ms * 0.6) }, { label: "Ranked the closest sessions", tool: null, ms: Math.round(ms * 0.4) }];
+  if (!summary) return { ...answer, steps, elapsed_ms: ms, model: "demo" };
+  const mine = s.feed.items.filter((i) => i.person === summary.person);
+  const lead = mine.find((i) => i.status !== "done") ?? mine[0];
+  const text = lead ? `${summary.person} has ${mine.length} ${mine.length === 1 ? "session" : "sessions"} on record and is currently on "${lead.task ?? "an open session"}".` : `${summary.person} has no sessions on record.`;
+  return { ...answer, answer: text, no_record: false, degraded: undefined, blocks: personBlocks(summary, s.feed.items, now), steps, elapsed_ms: ms, model: "demo" };
+}
+
 const projectLists = new Map<string, Project[]>();
 
 function projectsOf(ws: string): Project[] {
@@ -84,7 +113,7 @@ export const mockClient: MeshClient = {
     return e ? delay(e) : Promise.reject(new Error("Not in the demo data"));
   },
   warnings: (ws) => delay(space(ws).warnings),
-  ask: (ws, question) => delay(answerFor(ws, question)),
+  ask: (ws, question) => delay(askFor(ws, question)),
   exitInterview: (ws, person) => {
     const e = space(ws).exit[person];
     return e ? delay(e) : Promise.reject(new Error("Not in the demo data"));

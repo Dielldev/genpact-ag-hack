@@ -50,8 +50,8 @@ export function Board({ columns, closed, onToggle, cursor, warnings, people, foc
         return (
           <section key={col.id} className={`bcol bcol-${col.id}${shut ? " bcol-shut" : ""}`} aria-label={col.label}>
             <button type="button" className="bcol-head" onClick={() => onToggle(col.id)} aria-expanded={!shut}>
-              <ChevronDown size={14} className="chev" />
-              <StatusIcon tone={COLUMN_TONE[col.id]} size={15} />
+              <ChevronDown size={13} className="chev" />
+              <StatusIcon tone={COLUMN_TONE[col.id]} size={14} />
               <span className="bcol-label">{col.label}</span>
               <span className="n">{col.cards.length}</span>
             </button>

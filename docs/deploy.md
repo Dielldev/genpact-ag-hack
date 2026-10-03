@@ -58,6 +58,8 @@ It prints a `MESH_MEMBERS=...` line (put that into Vercel) and a table of name a
 | `MESH_MEMBERS` | the line from step 2, without the `MESH_MEMBERS=` prefix |
 | `MESH_WORKSPACE` | `genpact` |
 | `ANTHROPIC_API_KEY` | optional, for written answers in Ask |
+| `OPENROUTER_API_KEY` | optional, turns on the Ask agent (tool-using, model `openai/gpt-oss-120b`); without it Ask uses the classic path |
+| `OPENROUTER_MODEL`, `AGENT_MAX_STEPS`, `AGENT_TIMEOUT_MS` | optional, default `openai/gpt-oss-120b`, `6`, `60000` |
 
 5. Deploy, then open `https://YOUR-SITE/api/v1/health`. It should show `{"ok":true,...}`.
 

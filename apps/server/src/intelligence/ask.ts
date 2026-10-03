@@ -5,6 +5,7 @@ import type { AppDeps } from "../deps.js";
 import { LlmPurpose } from "../llm/types.js";
 import { redact } from "../redact.js";
 import { clip, keywords } from "../text.js";
+import { askWithAgent, AGENT_DEGRADED } from "./askAgent.js";
 import { ANSWER_SCHEMA, ANSWER_SYSTEM, answerInput, heuristicPlan, listingAnswer, PLAN_SCHEMA, PLAN_SYSTEM, type PlanInput } from "./askPrompts.js";
 
 const PlanSchema = z.object({
@@ -81,7 +82,7 @@ async function fetchRecords(deps: AppDeps, ws: string, question: string, p: AskP
 
 const idOf = (e: EventRecord) => e.event_id ?? `session-${e.session_pk}`;
 
-export async function ask(deps: AppDeps, ws: string, rawQuestion: string): Promise<AskResponse> {
+async function askClassic(deps: AppDeps, ws: string, rawQuestion: string): Promise<AskResponse> {
   const question = clip(redact(rawQuestion), 500);
   const p = await plan(deps, ws, question);
   const { events, knowledge } = await fetchRecords(deps, ws, question, p);
@@ -121,4 +122,12 @@ export async function ask(deps: AppDeps, ws: string, rawQuestion: string): Promi
     deps.log(`ask: answer model failed, listing records: ${(error as Error).message}`);
     return { ...listing(), degraded: "The answer model failed, so this lists the matching records." };
   }
+}
+
+export async function ask(deps: AppDeps, ws: string, rawQuestion: string): Promise<AskResponse> {
+  const question = clip(redact(rawQuestion), 500);
+  if (!deps.agent) return askClassic(deps, ws, question);
+  const answered = await askWithAgent(deps, deps.agent, ws, question);
+  if (answered) return answered;
+  return { ...(await askClassic(deps, ws, question)), degraded: AGENT_DEGRADED };
 }

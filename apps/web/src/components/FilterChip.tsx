@@ -1,4 +1,4 @@
-import { Check, ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, X, type LucideIcon } from "lucide-react";
 import { Menu } from "./Menu";
 
 interface Props {
@@ -6,12 +6,14 @@ interface Props {
   value: string;
   options: string[];
   onPick: (v: string) => void;
+  icon?: LucideIcon;
 }
 
-export function FilterChip({ label, value, options, onPick }: Props) {
+export function FilterChip({ label, value, options, onPick, icon: Icon }: Props) {
   return (
     <Menu align="right" trigger={(t) => (
       <button type="button" className={`chip-filter${value ? " chip-filter-on" : ""}`} onClick={t}>
+        {Icon && <Icon size={13} strokeWidth={1.8} />}
         {label}{value && <>: <strong>{value}</strong></>}
         {value ? <X size={12} onClick={(e) => { e.stopPropagation(); onPick(""); }} /> : <ChevronDown size={12} />}
       </button>

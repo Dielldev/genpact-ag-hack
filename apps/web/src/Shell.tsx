@@ -86,6 +86,9 @@ export function Shell({ me, onSignOut }: Props) {
   return (
     <div className={`shell${collapsed ? " shell-collapsed" : ""}`}>
       <Sidebar
+        workspaces={list}
+        workspace={workspace}
+        onWorkspace={setWorkspace}
         view={view.id}
         go={go}
         collapsed={collapsed}
@@ -102,9 +105,9 @@ export function Shell({ me, onSignOut }: Props) {
       />
       <div className="main">
         <Topbar
-          workspaces={list}
           workspace={workspace}
-          onWorkspace={setWorkspace}
+          title={view.label}
+          icon={view.icon}
           warnings={data.warnings.data}
           people={data.people.data}
           person={person}
@@ -115,9 +118,9 @@ export function Shell({ me, onSignOut }: Props) {
           profile={profile}
           now={now}
         />
-        <main className="page">
+        <main className={`page${view.id === "ask" ? " page-flush" : ""}`}>
           {!online && !MOCK && <div className="offline">The Mesh server is unreachable. Showing the last data we had; retrying every few seconds.</div>}
-          {view.id !== "feed" && <PageHead title={view.label} subtitle={view.subtitle} />}
+          {view.id !== "feed" && view.id !== "ask" && <PageHead title={view.label} subtitle={view.subtitle} />}
           {!workspace ? (
             <Empty icon={Inbox} title={spaces.loading ? "Loading workspaces…" : "No workspace has shared reports yet"}>
               Install the hook with <code>mesh init</code> and finish one agent response.

@@ -11,6 +11,8 @@ import type {
   WarningKind,
 } from "@mesh/contract";
 
+import type { AnswerBlock, AskStep } from "./blocks.js";
+
 export type Dated<T> = T & { ts: string };
 
 export interface EventRecord {
@@ -200,5 +202,9 @@ export interface AskResponse {
   knowledge: KnowledgeEntry[];
   plan: AskPlan;
   degraded?: string;
+  blocks?: AnswerBlock[];
+  steps?: AskStep[];
+  elapsed_ms?: number;
+  model?: string;
 }
 

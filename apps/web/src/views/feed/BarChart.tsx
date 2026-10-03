@@ -10,7 +10,7 @@ export function BarChart({ data, unit }: { data: Series; unit: string }) {
       {data.counts.map((c, i) => (
         <div key={i} className={`bar-col${i === on ? " bar-col-on" : ""}`} onMouseEnter={() => setHover(i)}>
           <div className="bar-track">
-            <div className="bar-rect" style={{ height: `${Math.max(8, (c / max) * 100)}%` }}>
+            <div className={`bar-rect${c === 0 ? " bar-rect-zero" : ""}`} style={{ height: c === 0 ? 3 : `${Math.max(8, (c / max) * 100)}%` }}>
               {i === on && <span className="bar-tip">{c} {unit}{c === 1 ? "" : "s"}</span>}
             </div>
           </div>
