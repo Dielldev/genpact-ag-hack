@@ -18,6 +18,34 @@ docs/
 
 ## Getting started
 
+### Install the hook on a computer
+
+Needs Node.js 20 or newer. Nothing else.
+
+Windows (PowerShell):
+
+```powershell
+irm https://github.com/Dielldev/genpact-ag-hack/releases/latest/download/install.ps1 | iex
+```
+
+Or download `install-mesh.cmd` from the [latest release](https://github.com/Dielldev/genpact-ag-hack/releases/latest) and double-click it.
+
+macOS and Linux:
+
+```bash
+curl -fsSL https://github.com/Dielldev/genpact-ag-hack/releases/latest/download/install.sh | sh
+```
+
+The installer downloads the prebuilt hook, verifies its SHA-256 checksums, and connects every detected agent CLI. To skip the questions, set the values first, for example in PowerShell:
+
+```powershell
+$env:MESH_SERVER = "https://mesh.example.com"; $env:MESH_WORKSPACE = "acme"; irm https://github.com/Dielldev/genpact-ag-hack/releases/latest/download/install.ps1 | iex
+```
+
+`MESH_CLIENTS=claude-code,cursor` limits which CLIs are connected. See [packages/cli/README.md](packages/cli/README.md) for how the hook works in each client.
+
+### Develop
+
 Requires Node 20+ and pnpm (`corepack enable` sets it up from the `packageManager` field).
 
 ```bash
@@ -26,13 +54,7 @@ pnpm build
 pnpm test
 ```
 
-Connect your agent CLIs to a server:
-
-```bash
-node packages/cli/dist/cli.mjs init
-```
-
-See [packages/cli/README.md](packages/cli/README.md) for how the hook works in each client.
+Pushing a `v*` tag builds and publishes a release with the hook and the install scripts.
 
 ## Scripts
 
