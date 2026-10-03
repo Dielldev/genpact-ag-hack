@@ -1,4 +1,4 @@
-import type { Client, ReportStatus, Visibility, WarningKind } from "./enums.js";
+import type { Client, DecisionArea, ReportStatus, Visibility, WarningKind } from "./enums.js";
 
 export interface ArtifactRef {
   kind: string;
@@ -7,6 +7,7 @@ export interface ArtifactRef {
 }
 
 export interface Decision {
+  area: DecisionArea;
   choice: string;
   reason: string;
 }
@@ -34,7 +35,7 @@ export interface ReportProgressInput {
   artifacts: ArtifactRef[];
   modules: string[];
   tags: string[];
-  decisions: Decision[];
+  decisions?: Decision[];
   dead_ends: DeadEnd[];
   human_corrections: HumanCorrection[];
   blockers: string[];

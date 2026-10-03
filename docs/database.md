@@ -30,7 +30,7 @@ A session is one row that is updated. Decisions, dead ends, corrections and bloc
 | `module_history(workspace, module)` | onboarding | Reports, items and knowledge, oldest first |
 | `workspace_vocabulary(workspace)` | planner | `{people, modules, tags}` from shared sessions |
 
-`report_progress` requires `workspace, person, client, session_id, status, summary`. Everything else is optional. Missing arrays are fine and blank items are skipped. Items arrive as the contract's per-kind arrays (`decisions`, `dead_ends`, `human_corrections`, `blockers`) or as `items: [{kind, text, reason}]`. Unknown keys are ignored and kept in `reports.raw_json`. An unknown `status` or item `kind` is rejected.
+`report_progress` requires `workspace, person, client, session_id, status, summary`. Everything else is optional. Missing arrays are fine (`decisions` is usually absent) and blank items are skipped. A decision's `area` (`technical` or `product`) is stored in `report_items.decision_area`; an unknown area is rejected. Items arrive as the contract's per-kind arrays (`decisions`, `dead_ends`, `human_corrections`, `blockers`) or as `items: [{kind, text, reason}]`. Unknown keys are ignored and kept in `reports.raw_json`. An unknown `status` or item `kind` is rejected.
 
 ## Tables
 
@@ -42,7 +42,7 @@ A session is one row that is updated. Decisions, dead ends, corrections and bloc
 | `search_documents` | One row per report, item and knowledge entry, with a generated `tsvector`. Filled by triggers, so nothing is unsearchable |
 | `warnings` | Collision and rediscovery warnings returned by `report_progress` |
 | `tickets`, `knowledge_entries` | Tickets and exit-interview answers |
-| `item_kinds`, `session_statuses`, `person_statuses`, `knowledge_sources`, `warning_kinds` | Value sets, mirrored from `@mesh/contract` |
+| `item_kinds`, `decision_areas`, `session_statuses`, `person_statuses`, `knowledge_sources`, `warning_kinds` | Value sets, mirrored from `@mesh/contract` |
 
 `visibility` stays a fixed `CHECK` (`shared` or `private`) because it protects privacy. `client` is unconstrained so a new tool never blocks reporting.
 
