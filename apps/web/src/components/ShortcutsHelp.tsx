@@ -3,8 +3,8 @@ import { useEffect } from "react";
 const ROWS: Array<[string, string[]]> = [
   ["Open the command palette", ["⌘", "K"]],
   ["Go to Live feed", ["G", "F"]],
-  ["Go to Collisions", ["G", "C"]],
   ["Go to Ask", ["G", "A"]],
+  ["Go to Collisions", ["G", "C"]],
   ["Go to Exit interview", ["G", "E"]],
   ["Go to Onboarding", ["G", "O"]],
   ["Move through the board", ["J", "K"]],

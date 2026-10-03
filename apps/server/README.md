@@ -29,6 +29,8 @@ Without Supabase credentials the server uses an in-memory Postgres (PGlite) with
 | `PGLITE_DIR` | in memory | Local database when Supabase is not set |
 | `ANTHROPIC_API_KEY` | | Optional: summarized answers in Ask and tailored exit questions. Without it Ask lists matching records and exit questions come from each person's own records |
 | `ANSWER_MODEL`, `WARN_MODEL` | `claude-sonnet-5-5`, `claude-haiku-4-5-20251001` | Answer and planner models |
+| `OPENROUTER_API_KEY` | | Optional: turns on the Ask agent (tools plus visual blocks). On failure Ask falls back to the classic path |
+| `OPENROUTER_MODEL`, `AGENT_MAX_STEPS`, `AGENT_TIMEOUT_MS` | `openai/gpt-oss-120b`, `6`, `60000` | Agent model, tool-step cap, total time budget |
 | `COLLISION_WINDOW_HOURS` | `48` | |
 | `REPORT_DEBOUNCE_SECONDS` | `10` | |
 | `ALLOWED_HOSTS` | | Hostnames allowed on `/mcp` besides localhost; empty allows all (tunnels) |

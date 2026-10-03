@@ -1,5 +1,7 @@
 import { serve } from "@hono/node-server";
 import type { AddressInfo } from "node:net";
+import { createAgentRunner } from "./agent/run.js";
+import type { AgentRunner } from "./agent/types.js";
 import { loadConfig, type Config } from "./config.js";
 import { openDb, type Db } from "./db/client.js";
 import { createMeshApi } from "./db/meshApi.js";
@@ -14,6 +16,7 @@ export interface BuildOptions {
   config?: Partial<Config>;
   db?: Db;
   llm?: LlmClient | null;
+  agent?: AgentRunner | null;
   clock?: () => Date;
   log?: (message: string) => void;
 }
@@ -25,14 +28,10 @@ export async function buildDeps(opts: BuildOptions = {}): Promise<AppDeps> {
   const version = await api.apiVersion();
   if (version !== EXPECTED_API_VERSION) throw new Error(`database mesh_api_version() is ${version}, server expects ${EXPECTED_API_VERSION}`);
   const llm = opts.llm !== undefined ? opts.llm : config.anthropicApiKey ? new AnthropicLlm(config.anthropicApiKey) : null;
-  return {
-    db,
-    api,
-    llm,
-    config,
-    clock: opts.clock ?? (() => new Date()),
-    log: opts.log ?? ((m) => console.log(`[mesh] ${m}`)),
-  };
+  const clock = opts.clock ?? (() => new Date());
+  const log = opts.log ?? ((m: string) => console.log(`[mesh] ${m}`));
+  const agent = opts.agent !== undefined ? opts.agent : config.openrouterApiKey ? createAgentRunner({ api, config, clock, log }) : null;
+  return { db, api, llm, agent, config, clock, log };
 }
 
 export interface RunningServer {

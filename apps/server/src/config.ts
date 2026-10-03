@@ -13,6 +13,10 @@ export interface Config {
   warnModel: string;
   answerModel: string;
   answerTimeoutMs: number;
+  openrouterApiKey: string | undefined;
+  agentModel: string;
+  agentMaxSteps: number;
+  agentTimeoutMs: number;
   collisionWindowHours: number;
   reportDebounceSeconds: number;
   allowedHosts: string[];
@@ -71,6 +75,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     warnModel: text(env.WARN_MODEL) ?? "claude-haiku-4-5-20251001",
     answerModel: text(env.ANSWER_MODEL) ?? "claude-sonnet-5-5",
     answerTimeoutMs: num(env.ANSWER_TIMEOUT_MS, 60000),
+    openrouterApiKey: text(env.OPENROUTER_API_KEY),
+    agentModel: text(env.OPENROUTER_MODEL) ?? "openai/gpt-oss-120b",
+    agentMaxSteps: Math.max(1, Math.floor(num(env.AGENT_MAX_STEPS, 6))),
+    agentTimeoutMs: num(env.AGENT_TIMEOUT_MS, 60000),
     collisionWindowHours: num(env.COLLISION_WINDOW_HOURS, 48),
     reportDebounceSeconds: num(env.REPORT_DEBOUNCE_SECONDS, 10),
     allowedHosts: list(env.ALLOWED_HOSTS),
