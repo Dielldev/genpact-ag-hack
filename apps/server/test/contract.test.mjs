@@ -18,6 +18,7 @@ const lookupTables = {
   PersonStatus: ["person_statuses", "status"],
   WarningKind: ["warning_kinds", "kind"],
   KnowledgeSource: ["knowledge_sources", "source"],
+  DecisionArea: ["decision_areas", "area"],
 };
 
 for (const [name, [table, column]] of Object.entries(lookupTables)) {
@@ -69,7 +70,7 @@ const contractReport = {
   artifacts: [{ kind: "file", ref: "src/billing/retry.ts", label: "retry logic" }],
   modules: ["billing"],
   tags: ["payments"],
-  decisions: [{ choice: "Use webhooks", reason: "Avoids polling" }],
+  decisions: [{ area: "technical", choice: "Use webhooks", reason: "Avoids polling" }],
   dead_ends: [{ attempt: "Polled Stripe from cron", reason: "Rate limited" }],
   human_corrections: [{ correction: "Use RS256", reason: "Security policy" }],
   blockers: ["Staging key expired"],
@@ -155,4 +156,17 @@ test("a new item kind needs only an insert", async () => {
   const rows = await ctx.q("select 1 from report_items where report_id = $1 and kind = 'assumption'", [result.event_id]);
   assert.equal(rows.length, 1);
   assert.equal((await ctx.q("select mesh_api_version() as v"))[0].v, 1);
+});
+
+test("a decision's area is stored and an unknown area is rejected", async () => {
+  const rows = await ctx.q("select decision_area from report_items where kind = 'decision' and text = 'Use webhooks'");
+  assert.equal(rows[0].decision_area, "technical");
+  const other = await ctx.q("select decision_area from report_items where kind = 'dead_end' limit 1");
+  assert.equal(other[0].decision_area, null);
+  await rejects(
+    ctx.rpc("report_progress", { ...contractReport, session_id: "sess-5", decisions: [{ area: "legal", choice: "x", reason: "y" }] }),
+  );
+  const noDecisions = { ...contractReport, session_id: "sess-6" };
+  delete noDecisions.decisions;
+  assert.match((await ctx.rpc("report_progress", noDecisions)).event_id, /^evt_/);
 });
