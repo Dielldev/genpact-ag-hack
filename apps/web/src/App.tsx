@@ -6,7 +6,6 @@ function Splash() {
   return (
     <div className="gate" role="status" aria-label="Loading">
       <div className="splash">
-        <div className="skeleton splash-mark" />
         <div className="skeleton splash-line" />
         <div className="skeleton splash-line splash-short" />
       </div>

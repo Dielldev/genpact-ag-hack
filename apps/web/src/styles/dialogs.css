@@ -10,6 +10,6 @@
 .field em { color: var(--ink-3); font-style: normal; font-weight: 400; margin-left: 4px; }
 .dialog .seg { justify-self: start; max-width: 100%; }
 .code-wrap { position: relative; }
-.code { margin: 0; padding: 14px 16px; padding-right: 100px; min-height: 58px; background: #faf9ff; border: 1px solid var(--line); border-radius: 12px; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+.code { margin: 0; padding: 14px 16px; padding-right: 100px; min-height: 58px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
 .code code { font-size: inherit; }
 .code-copy { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12.5px; }

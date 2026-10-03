@@ -26,8 +26,8 @@ export function PdfButton({ target, title, workspace }: Props) {
   };
 
   return (
-    <button type="button" className="btn btn-ghost ask-copy" onClick={run} disabled={busy} data-pdf-hide>
-      {busy ? <Loader2 size={13} style={{ animation: "ask-spin 0.8s linear infinite" }} /> : <FileDown size={13} />}
+    <button type="button" className="ask-link" onClick={run} disabled={busy} data-pdf-hide>
+      {busy ? <Loader2 size={12} style={{ animation: "ask-spin 0.8s linear infinite" }} /> : <FileDown size={12} />}
       <span>{busy ? "Preparing PDF…" : failed ? "Try PDF again" : "Download PDF"}</span>
     </button>
   );

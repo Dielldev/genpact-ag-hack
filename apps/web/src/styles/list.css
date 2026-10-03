@@ -1,20 +1,20 @@
 .list-card { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-card); margin-top: 40px; overflow: hidden; }
 .toolbar { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .toolbar h3 { font-family: var(--display); font-weight: 500; font-size: 15px; display: flex; align-items: center; gap: 8px; margin-right: auto; }
-.count { background: var(--brand-50); color: var(--brand); border-radius: 999px; padding: 0 8px; font-size: 11.5px; font-weight: 600; line-height: 20px; }
+.count { background: var(--brand-50); color: var(--brand-ink); border-radius: 999px; padding: 0 8px; font-size: 11.5px; font-weight: 600; line-height: 20px; }
 .chip-filter { display: inline-flex; align-items: center; gap: 6px; height: 30px; border: 1px dashed var(--line-2); background: var(--surface); border-radius: 8px; padding: 0 10px; font-size: 12.5px; color: var(--ink-2); transition: border-color 0.12s, background 0.12s; }
 .chip-filter:hover { border-color: var(--brand-100); background: var(--brand-50); }
 .chip-filter strong { color: var(--ink); font-weight: 500; }
-.chip-filter-on { border-style: solid; border-color: var(--brand-100); background: var(--brand-50); color: var(--brand); }
-.chip-filter-on strong { color: var(--brand); }
+.chip-filter-on { border-style: solid; border-color: var(--brand-100); background: var(--brand-50); color: var(--brand-ink); }
+.chip-filter-on strong { color: var(--brand-ink); }
 
 .tag { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--line); font-size: 11.5px; color: var(--ink-2); background: var(--surface); white-space: nowrap; font-weight: 500; }
 .tag-btn { cursor: pointer; }
-.tag-btn:hover { border-color: var(--brand-100); color: var(--brand); }
+.tag-btn:hover { border-color: var(--brand-100); color: var(--brand-ink); }
 .tag-mono { font-family: var(--mono); font-size: 11px; }
-.tag-collision { color: var(--crimson); border-color: #ffd3dc; background: var(--pink-50); }
-.tag-rediscovery { color: var(--teal); border-color: #bfe8e2; background: var(--teal-50); }
-.tag-soft { background: #f6f3ff; border-color: transparent; color: var(--brand); }
+.tag-collision { color: var(--crimson); border-color: var(--line-2); background: var(--pink-50); }
+.tag-rediscovery { color: var(--teal); border-color: var(--line-2); background: var(--teal-50); }
+.tag-soft { background: var(--surface-2); border-color: transparent; color: var(--brand-ink); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .kind { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); }
 
