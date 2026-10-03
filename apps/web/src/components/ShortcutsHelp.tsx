@@ -7,8 +7,8 @@ const ROWS: Array<[string, string[]]> = [
   ["Go to Ask", ["G", "A"]],
   ["Go to Exit interview", ["G", "E"]],
   ["Go to Onboarding", ["G", "O"]],
-  ["Move through sessions", ["J", "K"]],
-  ["Open the selected session", ["↵"]],
+  ["Move through the board", ["J", "K"]],
+  ["Open the selected report", ["↵"]],
   ["Collapse the sidebar", ["["]],
   ["Close any panel", ["esc"]],
 ];

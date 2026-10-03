@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Radio } from "lucide-react";
+import type { FeedItem } from "@mesh/server/api";
 import type { Dashboard } from "../dashboard";
 import { Empty, ErrorState, Loading } from "../components/bits";
 import { FilterChip } from "../components/FilterChip";
@@ -9,15 +10,15 @@ import { matchProject } from "../projects";
 import { useShortcuts } from "../shortcuts";
 import { BarChart } from "./feed/BarChart";
 import { ChartCard } from "./feed/ChartCard";
-import { groupItems, passes, toneFor, type TileId } from "./feed/filters";
+import { Board } from "./feed/Board";
+import { buildBoard, type ColumnId } from "./feed/boardModel";
+import { passes, toneFor, type TileId } from "./feed/filters";
 import { Hero } from "./feed/Hero";
 import { LineChart } from "./feed/LineChart";
 import { pairKey, type Signal } from "./feed/MeshGraph";
 import { PERIODS, series, trend } from "./feed/series";
-import { SessionList } from "./feed/SessionList";
 import { Tiles } from "./feed/Tiles";
 import { useChanged } from "./feed/useChanged";
-import type { Tone } from "../format";
 
 interface Props {
   workspace: string;
@@ -37,7 +38,7 @@ export function Feed({ workspace, data, person, module, project, onPerson, onMod
   const now = useNow(5000);
   const [tile, setTile] = useState<TileId>("all");
   const [period, setPeriod] = useState(PERIODS[1]!);
-  const [closed, setClosed] = useState<Set<Tone>>(new Set(["done"]));
+  const [closed, setClosed] = useState<Set<ColumnId>>(new Set(["done"]));
   const [cursor, setCursor] = useState(0);
   const [scrollKey, setScrollKey] = useState(0);
   const all = data.feed.data?.items;
@@ -52,8 +53,9 @@ export function Feed({ workspace, data, person, module, project, onPerson, onMod
   }, [all, person, module, project, projects]);
   const counts = Object.fromEntries(TILE_IDS.map((t) => [t, scoped.filter((i) => passes(t, i, now, warnings)).length])) as Record<TileId, number>;
   const visible = scoped.filter((i) => passes(tile, i, now, warnings));
-  const groups = groupItems(visible, now);
-  const shown = groups.filter((g) => !closed.has(g.tone)).flatMap((g) => g.items);
+  const columns = buildBoard(visible, now);
+  const shown = columns.filter((c) => !closed.has(c.id)).flatMap((c) => c.cards);
+  const boardPeople = columns.reduce((n, c) => n + c.cards.length, 0);
 
   const signals: Record<string, Signal> = {};
   for (const i of all ?? []) {
@@ -72,8 +74,9 @@ export function Feed({ workspace, data, person, module, project, onPerson, onMod
   const inPeriod = raised.counts.reduce((a, b) => a + b, 0);
   const raisedTrend = collisionsInPeriod > 0 ? { text: `${collisionsInPeriod} collision${collisionsInPeriod === 1 ? "" : "s"}`, dir: "down" as const } : { text: "All clear", dir: "up" as const };
 
-  const toggle = (tone: Tone) => setClosed((c) => { const n = new Set(c); n.has(tone) ? n.delete(tone) : n.add(tone); return n; });
-  const openAt = (i: number) => { const it = shown[i]; if (it) onOpen(it.event_id ?? String(it.session_pk)); };
+  const toggle = (id: ColumnId) => setClosed((c) => { const n = new Set(c); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const openItem = (it: FeedItem) => onOpen(it.event_id ?? String(it.session_pk));
+  const openAt = (i: number) => { const card = shown[i]; if (card) openItem(card.lead); };
   const pickTile = (t: TileId) => { setTile(t); setCursor(0); if (t === "done") setClosed((c) => { const n = new Set(c); n.delete("done"); return n; }); };
 
   useShortcuts([
@@ -106,9 +109,9 @@ export function Feed({ workspace, data, person, module, project, onPerson, onMod
           <LineChart data={raised} unit="warning" />
         </ChartCard>
       </div>
-      <section className="list-card" aria-label="Sessions">
+      <section className="list-card" aria-label="Team board">
         <div className="toolbar">
-          <h3>Sessions <span className="count">{visible.length}</span></h3>
+          <h3>Team board <span className="count">{boardPeople}</span></h3>
           <FilterChip label="Person" value={person} options={people.map((p) => p.person)} onPick={onPerson} />
           <FilterChip label="Project" value={project} options={(projects ?? []).map((p) => p.title)} onPick={onProject} />
           <FilterChip label="Module" value={module} options={data.modules.data?.modules ?? []} onPick={onModule} />
@@ -120,7 +123,7 @@ export function Feed({ workspace, data, person, module, project, onPerson, onMod
             </Empty>
           </div>
         ) : (
-          <SessionList groups={groups} closed={closed} onToggle={toggle} cursor={cursor} warnings={warnings} changed={changed} now={now} onOpen={onOpen} onModule={onModule} onCursor={setCursor} scrollKey={scrollKey} />
+          <Board columns={columns} closed={closed} onToggle={toggle} cursor={cursor} warnings={warnings} people={people} focused={person} changed={changed} now={now} onOpen={openItem} onPerson={(p) => onPerson(p === person ? "" : p)} onModule={onModule} onCursor={setCursor} scrollKey={scrollKey} />
         )}
       </section>
     </div>
