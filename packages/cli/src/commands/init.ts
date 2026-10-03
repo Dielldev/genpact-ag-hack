@@ -12,7 +12,7 @@ import {
 import { checkHealth, whoAmI } from "../hook/server.js";
 import { parseClient } from "../hook/payload.js";
 import { defaultPersonName } from "../util/identity.js";
-import { ask, confirm, isInteractive } from "../util/prompt.js";
+import { ask, askText, confirm, isInteractive } from "../util/prompt.js";
 import { buildHookCommand, installHookRuntime, mcpHeadersFor, mcpUrlFor } from "./runtime.js";
 
 export const DEFAULT_SERVER_URL = "http://localhost:8787";
@@ -71,9 +71,16 @@ async function resolveConfig(options: InitOptions, interactive: boolean): Promis
     await pick(options.server, "Mesh server URL", existing?.serverUrl ?? DEFAULT_SERVER_URL),
   );
   const givenKey = options.key || process.env.MESH_KEY || existing?.key;
-  const key = givenKey ? validateKey(givenKey) : undefined;
+  let key = givenKey ? validateKey(givenKey) : undefined;
 
-  const who = await whoAmI(serverUrl, key);
+  let who = await whoAmI(serverUrl, key);
+  if (who.kind === "rejected" && interactive) {
+    const entered = await askText("Your Mesh access key");
+    if (entered) {
+      key = validateKey(entered);
+      who = await whoAmI(serverUrl, key);
+    }
+  }
   if (who.kind === "rejected") {
     throw new Error(
       key

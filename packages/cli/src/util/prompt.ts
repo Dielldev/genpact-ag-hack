@@ -14,6 +14,15 @@ export async function ask(question: string, fallback: string): Promise<string> {
   }
 }
 
+export async function askText(question: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return (await rl.question(`${question}: `)).trim();
+  } finally {
+    rl.close();
+  }
+}
+
 export async function confirm(question: string, fallback = true): Promise<boolean> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
