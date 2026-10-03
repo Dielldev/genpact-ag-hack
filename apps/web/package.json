@@ -3,7 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:mock": "VITE_MOCK=1 vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "dependencies": {
-    "@mesh/contract": "workspace:*"
+    "@mesh/contract": "workspace:*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@mesh/server": "workspace:*",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1"
   }
 }
