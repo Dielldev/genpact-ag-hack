@@ -1,184 +1,73 @@
 # Database
 
-Supabase Postgres. Full-text search uses Postgres's built-in `tsvector` with GIN indexes, so no extension is needed for search. `pg_trgm` is optional for fuzzy name matching, and `pgvector` is available later if keyword search is not enough.
+Supabase Postgres. Migrations live in `apps/server/supabase/migrations/` and run in filename order. Search uses built-in `tsvector` with GIN indexes, so no extension is needed. `pg_trgm` (fuzzy names) or `pgvector` (semantic search) can be added later by changing only `search_knowledge()`.
+
+## The boundary
+
+```
+hook / MCP / web  ->  server  ->  RPC functions  ->  tables
+```
+
+- The hook only calls the server's HTTP API and never touches the database.
+- The server only calls the functions below, never the tables. The functions are the database's public API.
+- Only the server holds the Supabase `service_role` key. RLS is on with no policies, and `anon` / `authenticated` are revoked.
+- Map contract types to function payloads in one adapter file in the server. A contract change then touches one file.
+- Supabase's JS client has no transactions, so call `supabase.rpc(name, { p })`. A direct connection through the pooler works too.
 
 ## Core rule
 
-A session is **one row that is updated**, while decisions, dead ends, corrections and blockers are **rows that are only ever added**. Each `report_progress` call describes one turn. Overwriting `dead_ends` on upsert would erase earlier ones, and the exit interview and rediscovery warnings both need the full dated history.
+A session is one row that is updated. Decisions, dead ends, corrections and blockers are rows that are only added. `reports`, `report_items` and `knowledge_entries` reject updates and deletes in the database. Only `visibility` (cascaded from the session) and `person` (cascaded from a rename) may change. Use `TRUNCATE` to reset a demo database.
 
-## Schema
+## Functions (`mesh_api_version()` = 1)
 
-The enum types mirror `@mesh/contract`. Add a value to the contract first, then `ALTER TYPE ... ADD VALUE`.
+| Function | Used by | Notes |
+|---|---|---|
+| `touch_session(p)` | `POST /api/v1/turns` | `p` is a `TurnPing`. Bumps `last_seen_at`, applies `visibility` and `project`, writes no report. Returns `{session_pk, last_report_at, report_count}` so the server can decide `request_report` |
+| `report_progress(p)` | MCP `report_progress` | `p` is a `ReportProgressInput`. One transaction. Returns `{event_id, session_pk, warnings[]}` and each warning is `{id, kind, message, source_event_ids}` |
+| `record_knowledge(p)` | exit interview | `{workspace, person, module?, question, answer, source_event_ids?}`. Also makes the answer searchable |
+| `search_knowledge(workspace, query, modules, artifact_refs, limit)` | "why does Y work this way" | `ts_rank_cd` plus module and artifact boost plus recency decay. Shared only |
+| `exit_interview_targets(workspace, person, limit)` | exit interview | Modules where the person is the main contributor, least-captured reasoning first |
+| `module_history(workspace, module)` | onboarding | Reports, items and knowledge, oldest first |
+| `workspace_vocabulary(workspace)` | planner | `{people, modules, tags}` from shared sessions |
 
-```sql
-create type client as enum ('claude-code', 'codex', 'cursor', 'gemini');
-create type report_status as enum ('in_progress', 'blocked', 'done');
-create type visibility as enum ('shared', 'private');
-create type item_kind as enum ('decision', 'dead_end', 'human_correction', 'blocker');
-create type warning_kind as enum ('collision', 'rediscovery');
-create type person_status as enum ('active', 'leaving', 'left');
-create type knowledge_source as enum ('exit_interview');
+`report_progress` requires `workspace, person, client, session_id, status, summary`. Everything else is optional. Missing arrays are fine and blank items are skipped. Items arrive as the contract's per-kind arrays (`decisions`, `dead_ends`, `human_corrections`, `blockers`) or as `items: [{kind, text, reason}]`. Unknown keys are ignored and kept in `reports.raw_json`. An unknown `status` or item `kind` is rejected.
 
-create table people (
-  id uuid primary key default gen_random_uuid(),
-  workspace text not null,
-  name text not null,
-  role text,
-  status person_status not null default 'active',
-  created_at timestamptz not null default now(),
-  unique (workspace, name)
-);
+## Tables
 
-create table sessions (
-  id uuid primary key default gen_random_uuid(),
-  client client not null,
-  session_id text not null,
-  person text not null,
-  workspace text not null,
-  project text,
-  visibility visibility not null default 'shared',
-  ticket_ref text,
-  task text,
-  status report_status,
-  summary text,
-  modules text[] not null default '{}',
-  tags text[] not null default '{}',
-  first_seen_at timestamptz not null default now(),
-  last_seen_at timestamptz not null default now(),
-  last_report_at timestamptz,
-  report_count integer not null default 0,
-  unique (client, session_id)
-);
-create index sessions_feed_idx on sessions (workspace, last_seen_at desc);
-create index sessions_person_idx on sessions (workspace, person, last_seen_at desc);
-create index sessions_modules_idx on sessions using gin (modules);
-create index sessions_tags_idx on sessions using gin (tags);
-
-create table reports (
-  id uuid primary key default gen_random_uuid(),
-  session_pk uuid not null references sessions(id) on delete cascade,
-  workspace text not null,
-  visibility visibility not null,
-  ts timestamptz not null default now(),
-  task text,
-  status report_status not null,
-  summary text not null,
-  raw jsonb not null,
-  search tsvector generated always as (
-    to_tsvector('english', coalesce(task, '') || ' ' || summary)
-  ) stored
-);
-create index reports_session_idx on reports (session_pk, ts);
-create index reports_search_idx on reports using gin (search);
-
-create table report_items (
-  id uuid primary key default gen_random_uuid(),
-  report_id uuid not null references reports(id) on delete cascade,
-  session_pk uuid not null references sessions(id) on delete cascade,
-  workspace text not null,
-  visibility visibility not null,
-  person text not null,
-  kind item_kind not null,
-  text text not null,
-  reason text,
-  ts timestamptz not null default now(),
-  search tsvector generated always as (
-    to_tsvector('english', text || ' ' || coalesce(reason, ''))
-  ) stored
-);
-create index report_items_kind_idx on report_items (workspace, kind, ts desc);
-create index report_items_search_idx on report_items using gin (search);
-
-create table session_artifacts (
-  session_pk uuid not null references sessions(id) on delete cascade,
-  kind text not null,
-  ref text not null,
-  label text,
-  first_seen_at timestamptz not null default now(),
-  last_seen_at timestamptz not null default now(),
-  primary key (session_pk, kind, ref)
-);
-create index session_artifacts_ref_idx on session_artifacts (ref);
-
-create table warnings (
-  id uuid primary key default gen_random_uuid(),
-  report_id uuid not null references reports(id) on delete cascade,
-  workspace text not null,
-  kind warning_kind not null,
-  message text not null,
-  source_event_ids uuid[] not null default '{}',
-  created_at timestamptz not null default now(),
-  dismissed boolean not null default false
-);
-create index warnings_feed_idx on warnings (workspace, created_at desc) where not dismissed;
-
-create table tickets (
-  id uuid primary key default gen_random_uuid(),
-  workspace text not null,
-  ref text not null,
-  title text not null,
-  description text,
-  status text not null default 'open',
-  assignee text,
-  created_by text not null,
-  created_at timestamptz not null default now(),
-  unique (workspace, ref)
-);
-
-create table knowledge_entries (
-  id uuid primary key default gen_random_uuid(),
-  workspace text not null,
-  person text not null,
-  module text,
-  question text not null,
-  answer text not null,
-  source knowledge_source not null,
-  source_event_ids uuid[] not null default '{}',
-  created_at timestamptz not null default now(),
-  search tsvector generated always as (
-    to_tsvector('english', question || ' ' || answer)
-  ) stored
-);
-create index knowledge_search_idx on knowledge_entries using gin (search);
-create index knowledge_module_idx on knowledge_entries (workspace, module);
-
-alter table people enable row level security;
-alter table sessions enable row level security;
-alter table reports enable row level security;
-alter table report_items enable row level security;
-alter table session_artifacts enable row level security;
-alter table warnings enable row level security;
-alter table tickets enable row level security;
-alter table knowledge_entries enable row level security;
-```
-
-Row level security is on with no policies, so only the server (service role or direct connection) can read or write. The web app goes through the server and never holds a Supabase key.
-
-## Writes
-
-- `POST /api/v1/turns`: upsert `sessions` with `insert ... on conflict (client, session_id) do update set last_seen_at = now()`. No report rows
-- `report_progress`, in one transaction:
-  1. Upsert `sessions` with the latest task, status, summary, the union of modules and tags, and increment `report_count`
-  2. Insert one `reports` row
-  3. Insert one `report_items` row per decision, dead end, correction and blocker
-  4. Upsert `session_artifacts`
-  5. Run the warning check, insert hits into `warnings`, return them
-- Exit-interview answers go into `knowledge_entries`
-
-## Reads
-
-| Need | Query |
+| Table | Purpose |
 |---|---|
-| Live feed, "what is X doing" | `sessions` by `workspace` and `person`, ordered by `last_seen_at desc` |
-| "Why does Y work this way" | Module or artifact match (`modules && $1`, `session_artifacts.ref`), plus `search @@ websearch_to_tsquery('english', $2)` across reports, items and knowledge, ranked by `ts_rank_cd(search, query) * exp(-age_in_days / 30)`, limit about 8 |
-| Collision warning | Other people's `sessions` with `status <> 'done'`, recent `last_seen_at`, and `modules && $1` or a shared artifact ref |
-| Rediscovery warning | Full-text match on other people's `report_items` where `kind in ('dead_end', 'decision')` |
-| Exit-interview targeting | Modules where the person owns most sessions, joined with a count of their `report_items` per module. Few items means little captured reasoning |
-| Onboarding | All reports, items and knowledge entries for a module, oldest first |
-| Planner vocabulary | Distinct people, `unnest(modules)` and `unnest(tags)` per workspace |
+| `people`, `sessions` | One row each, updated. `sessions` is unique on `(workspace, client, session_id)`. A different person cannot reuse a session id |
+| `reports`, `report_items` | Append-only history. Items are decisions, dead ends, human corrections and blockers |
+| `session_artifacts`, `session_modules`, `session_tags` | Retrieval keys per session |
+| `search_documents` | One row per report, item and knowledge entry, with a generated `tsvector`. Filled by triggers, so nothing is unsearchable |
+| `warnings` | Collision and rediscovery warnings returned by `report_progress` |
+| `tickets`, `knowledge_entries` | Tickets and exit-interview answers |
+| `item_kinds`, `session_statuses`, `person_statuses`, `knowledge_sources`, `warning_kinds` | Value sets, mirrored from `@mesh/contract` |
 
-## Rules
+`visibility` stays a fixed `CHECK` (`shared` or `private`) because it protects privacy. `client` is unconstrained so a new tool never blocks reporting.
 
-- Filter every read by `workspace`, and every shared read, including the warning check, by `visibility = 'shared'`
-- Parameterized queries only. `websearch_to_tsquery` accepts raw user text safely, so never build `to_tsquery` strings by hand
-- Redact secrets before writing, including `raw`
+## Rules the database enforces
+
+- Child rows carry a composite foreign key to their session, so they cannot hold a different workspace or visibility.
+- Changing a session's visibility cascades to its reports, items and search rows. A turn ping with `private` hides an existing session at once.
+- Every read filters by workspace and `visibility = 'shared'`, including the warning check.
+- Search text is turned into stemmed terms before it reaches the query, so `-`, `"` or `:` cannot break syntax.
+- Repeat warnings for the same session are suppressed for an hour.
+
+Not enforced here: redaction. The server must redact before calling any function, because `raw_json` stores the payload as received.
+
+## Changing things
+
+| Change | What to do |
+|---|---|
+| New value in a contract enum | Add it to `@mesh/contract`, then `insert` it into the matching table (`item_kinds` also needs `payload_key`, `label`, `rediscovery_relevant`). No function change. `pnpm test` fails if the two drift |
+| New field the hook sends | Nothing breaks, it lands in `raw_json`. To use it, add a migration |
+| New column or table | New file in `supabase/migrations/`, additive only. Never edit an applied migration |
+| Breaking function shape | Add `report_progress_v2` beside the old one, move the server, then drop the old one and bump `mesh_api_version()` |
+| Different search engine | Rewrite `search_knowledge()` and the `search_documents` indexes. The signature stays |
+
+The server should assert `mesh_api_version()` at startup.
+
+## Tests
+
+`pnpm --filter @mesh/server test` runs every migration on an in-memory Postgres (`@electric-sql/pglite`). It checks the rules above, feeds the contract's exact payload shapes to the functions, and fails if a contract enum and its table differ.
