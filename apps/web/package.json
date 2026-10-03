@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@mesh/contract": "workspace:*",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.50.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

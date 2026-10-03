@@ -1,11 +1,11 @@
 import type { Tone } from "../format";
 
 const COLOR: Record<Tone, string> = {
-  active: "#8b8f98",
-  progress: "#e2a100",
-  blocked: "#d9730d",
+  active: "#a09fb4",
+  progress: "#6c3ff0",
+  blocked: "#e8870b",
   stuck: "#e5484d",
-  done: "#5e6ad2",
+  done: "#1fa97a",
 };
 
 export function StatusIcon({ tone, size = 16 }: { tone: Tone; size?: number }) {

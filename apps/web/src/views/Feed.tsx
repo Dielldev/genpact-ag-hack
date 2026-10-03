@@ -1,24 +1,24 @@
-import type { FeedItem } from "@mesh/server/api";
-import { Boxes, Folder, Radio, User } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Radio } from "lucide-react";
+import type { FeedItem } from "@mesh/server/api";
+import type { Dashboard } from "../dashboard";
 import { Empty, ErrorState, Loading } from "../components/bits";
 import { FilterChip } from "../components/FilterChip";
+import { minutesSince } from "../format";
 import { useNow } from "../hooks";
 import { matchProject } from "../projects";
 import { useShortcuts } from "../shortcuts";
 import { BarChart } from "./feed/BarChart";
+import { ChartCard } from "./feed/ChartCard";
 import { Board } from "./feed/Board";
 import { buildBoard, type ColumnId } from "./feed/boardModel";
-import { ChartCard } from "./feed/ChartCard";
-import { clashPairs, overview, personSignals } from "./feed/feedStats";
-import { passes, type TabId } from "./feed/filters";
+import { passes, toneFor, type TileId } from "./feed/filters";
+import { Hero } from "./feed/Hero";
 import { LineChart } from "./feed/LineChart";
+import { pairKey, type Signal } from "./feed/MeshGraph";
 import { PERIODS, series, trend } from "./feed/series";
-import { Stats } from "./feed/Stats";
-import { Tabs } from "./feed/Tabs";
-import { TeamPanel } from "./feed/TeamPanel";
+import { Tiles } from "./feed/Tiles";
 import { useChanged } from "./feed/useChanged";
-import type { Dashboard } from "../dashboard";
 
 interface Props {
   workspace: string;
@@ -32,12 +32,11 @@ interface Props {
   onOpen: (id: string) => void;
 }
 
-const TAB_IDS: TabId[] = ["all", "progress", "blocked", "stuck", "done", "collisions"];
-const sum = (counts: number[]) => counts.reduce((a, b) => a + b, 0);
+const TILE_IDS: TileId[] = ["all", "progress", "blocked", "stuck", "done", "collisions"];
 
 export function Feed({ workspace, data, person, module, project, onPerson, onModule, onProject, onOpen }: Props) {
   const now = useNow(5000);
-  const [tab, setTab] = useState<TabId>("all");
+  const [tile, setTile] = useState<TileId>("all");
   const [period, setPeriod] = useState(PERIODS[1]!);
   const [closed, setClosed] = useState<Set<ColumnId>>(new Set(["done"]));
   const [cursor, setCursor] = useState(0);
@@ -52,22 +51,33 @@ export function Feed({ workspace, data, person, module, project, onPerson, onMod
     const inProject = matchProject(projects ?? [], project);
     return (all ?? []).filter((i) => (!person || i.person === person) && (!module || i.modules.includes(module)) && inProject(i));
   }, [all, person, module, project, projects]);
-  const counts = Object.fromEntries(TAB_IDS.map((t) => [t, scoped.filter((i) => passes(t, i, now, warnings)).length])) as Record<TabId, number>;
-  const visible = scoped.filter((i) => passes(tab, i, now, warnings));
+  const counts = Object.fromEntries(TILE_IDS.map((t) => [t, scoped.filter((i) => passes(t, i, now, warnings)).length])) as Record<TileId, number>;
+  const visible = scoped.filter((i) => passes(tile, i, now, warnings));
   const columns = buildBoard(visible, now);
   const shown = columns.filter((c) => !closed.has(c.id)).flatMap((c) => c.cards);
+  const boardPeople = columns.reduce((n, c) => n + c.cards.length, 0);
 
-  const scopedWarnings = warnings.filter((w) => !person || w.people.includes(person));
-  const values = overview(scoped, scopedWarnings, people.find((p) => p.person === person), now, period);
-  const raised = series(scopedWarnings.map((w) => w.created_at), now, period);
+  const signals: Record<string, Signal> = {};
+  for (const i of all ?? []) {
+    const tone = toneFor(i, now);
+    const next: Signal | undefined = tone === "stuck" ? "stuck" : tone === "blocked" ? "blocked" : tone === "done" ? undefined : "open";
+    const have = signals[i.person];
+    if (next && (!have || (have === "open" && next !== "open") || (have === "blocked" && next === "stuck"))) signals[i.person] = next;
+  }
+  const clashes = new Set<string>();
+  for (const w of warnings) if (w.kind === "collision") for (const s of w.sources) clashes.add(pairKey(w.reporter.person, s.person));
+
   const started = series(scoped.map((i) => i.first_seen_at), now, period);
-  const collisionsInPeriod = values.collisionsInPeriod;
+  const scopedWarnings = warnings.filter((w) => !person || w.people.includes(person));
+  const raised = series(scopedWarnings.map((w) => w.created_at), now, period);
+  const collisionsInPeriod = scopedWarnings.filter((w) => w.kind === "collision" && minutesSince(w.created_at, now) * 60_000 <= period.ms).length;
+  const inPeriod = raised.counts.reduce((a, b) => a + b, 0);
   const raisedTrend = collisionsInPeriod > 0 ? { text: `${collisionsInPeriod} collision${collisionsInPeriod === 1 ? "" : "s"}`, dir: "down" as const } : { text: "All clear", dir: "up" as const };
 
   const toggle = (id: ColumnId) => setClosed((c) => { const n = new Set(c); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const openItem = (it: FeedItem) => onOpen(it.event_id ?? String(it.session_pk));
   const openAt = (i: number) => { const card = shown[i]; if (card) openItem(card.lead); };
-  const pickTab = (t: TabId) => { setTab(t); setCursor(0); if (t === "done") setClosed((c) => { const n = new Set(c); n.delete("done"); return n; }); };
+  const pickTile = (t: TileId) => { setTile(t); setCursor(0); if (t === "done") setClosed((c) => { const n = new Set(c); n.delete("done"); return n; }); };
 
   useShortcuts([
     { keys: "j", run: () => { setCursor((c) => Math.min(shown.length - 1, c + 1)); setScrollKey((k) => k + 1); } },
@@ -79,30 +89,39 @@ export function Feed({ workspace, data, person, module, project, onPerson, onMod
   if (data.feed.error && !all) return <ErrorState message={data.feed.error} onRetry={data.feed.reload} />;
 
   return (
-    <div className="feed">
-      <div className="feed-head">
-        <Tabs active={tab} counts={counts} onPick={pickTab} />
-        <div className="feed-filters">
-          <FilterChip icon={User} label="Person" value={person} options={people.map((p) => p.person)} onPick={onPerson} />
-          <FilterChip icon={Folder} label="Project" value={project} options={(projects ?? []).map((p) => p.title)} onPick={onProject} />
-          <FilterChip icon={Boxes} label="Module" value={module} options={data.modules.data?.modules ?? []} onPick={onModule} />
-        </div>
-      </div>
-      <Stats workspace={workspace} people={people} person={person} onPerson={onPerson} values={values} period={period} now={now} />
-      <div className="charts">
-        <ChartCard title="Sessions" period={period} onPeriod={setPeriod} big={String(sum(started.counts))} trend={trend(started.counts)}>
+    <div>
+      <Tiles active={tile} counts={counts} onPick={pickTile} />
+      <Hero
+        workspace={workspace}
+        people={people}
+        person={person}
+        onPerson={onPerson}
+        totals={{ sessions: scoped.length, open: scoped.filter((i) => toneFor(i, now) !== "done").length, modules: new Set(scoped.flatMap((i) => i.modules)).size }}
+        signals={signals}
+        clashes={clashes}
+        now={now}
+      />
+      <div className="cards2">
+        <ChartCard title="Sessions" period={period} onPeriod={setPeriod} big={String(started.counts.reduce((a, b) => a + b, 0))} trend={trend(started.counts)}>
           <BarChart data={started} unit="session" />
         </ChartCard>
-        <ChartCard title="Warnings" period={period} onPeriod={setPeriod} big={String(sum(raised.counts))} trend={raisedTrend}>
+        <ChartCard title="Warnings" period={period} onPeriod={setPeriod} big={String(inPeriod)} trend={raisedTrend}>
           <LineChart data={raised} unit="warning" />
         </ChartCard>
       </div>
-      <TeamPanel people={people} selected={person} signals={personSignals(all ?? [], now)} clashes={clashPairs(warnings)} onSelect={onPerson} />
-      <section className="board-section" aria-label="Team board">
+      <section className="list-card" aria-label="Team board">
+        <div className="toolbar">
+          <h3>Team board <span className="count">{boardPeople}</span></h3>
+          <FilterChip label="Person" value={person} options={people.map((p) => p.person)} onPick={onPerson} />
+          <FilterChip label="Project" value={project} options={(projects ?? []).map((p) => p.title)} onPick={onProject} />
+          <FilterChip label="Module" value={module} options={data.modules.data?.modules ?? []} onPick={onModule} />
+        </div>
         {all && visible.length === 0 ? (
-          <Empty icon={Radio} title={all.length === 0 ? "No shared sessions yet" : "No sessions match these filters"}>
-            {all.length === 0 ? "Sessions appear here as soon as an agent finishes a response with the hook installed." : "Clear a filter or pick another tab to see more."}
-          </Empty>
+          <div style={{ padding: 20 }}>
+            <Empty icon={Radio} title={all.length === 0 ? "No shared sessions yet" : "No sessions match these filters"}>
+              {all.length === 0 ? "Sessions appear here as soon as an agent finishes a response with the hook installed." : "Clear a filter or pick another tile to see more."}
+            </Empty>
+          </div>
         ) : (
           <Board columns={columns} closed={closed} onToggle={toggle} cursor={cursor} warnings={warnings} people={people} focused={person} changed={changed} now={now} onOpen={openItem} onPerson={(p) => onPerson(p === person ? "" : p)} onModule={onModule} onCursor={setCursor} scrollKey={scrollKey} />
         )}

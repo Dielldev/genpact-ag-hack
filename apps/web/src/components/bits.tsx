@@ -52,7 +52,7 @@ export function ModuleChips({ modules, onPick }: { modules: string[]; onPick?: (
 export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   const h = hueOf(name);
   return (
-    <span className="avatar" title={firstName(name)} style={{ ["--s" as string]: `${size}px`, background: `hsl(${h} 30% 46%)` }} aria-hidden>
+    <span className="avatar" title={firstName(name)} style={{ ["--s" as string]: `${size}px`, background: `linear-gradient(135deg, hsl(${h} 70% 62%), hsl(${(h + 35) % 360} 68% 50%))` }} aria-hidden>
       {initials(name)}
     </span>
   );

@@ -1,16 +1,19 @@
 import type { AskResponse } from "@mesh/server/api";
 import { Check, ChevronRight, Copy } from "lucide-react";
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { toMarkdown } from "../markdown";
+import { PdfButton } from "./PdfButton";
 
 const seconds = (ms: number) => (ms < 100 ? "<0.1s" : `${(ms / 1000).toFixed(1)}s`);
 
 interface Props {
   question: string;
   answer: AskResponse;
+  target: RefObject<HTMLElement | null>;
+  workspace: string;
 }
 
-export function Steps({ question, answer }: Props) {
+export function Steps({ question, answer, target, workspace }: Props) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const steps = answer.steps ?? [];
@@ -27,7 +30,7 @@ export function Steps({ question, answer }: Props) {
 
   return (
     <div className="ask-steps">
-      <div className="ask-steps-bar">
+      <div className="ask-steps-bar" data-pdf-hide>
         {steps.length > 0 || answer.elapsed_ms ? (
           <button type="button" className="ask-steps-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)} disabled={steps.length === 0}>
             <ChevronRight size={13} className={open ? "is-open" : undefined} />
@@ -37,6 +40,7 @@ export function Steps({ question, answer }: Props) {
         ) : <span />}
         <span className="ask-steps-right">
           {answer.model && <span className="rep-chip rep-chip-mono" title="Model">{answer.model}</span>}
+          <PdfButton target={target} title={question} workspace={workspace} />
           <button type="button" className="btn btn-ghost ask-copy" onClick={copy}>
             {copied ? <Check size={13} /> : <Copy size={13} />}
             <span>{copied ? "Copied" : "Copy as Markdown"}</span>
