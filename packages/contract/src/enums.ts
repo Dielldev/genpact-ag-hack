@@ -21,6 +21,11 @@ export enum WarningKind {
   rediscovery = "rediscovery",
 }
 
+export enum DecisionArea {
+  technical = "technical",
+  product = "product",
+}
+
 export enum ItemKind {
   decision = "decision",
   deadEnd = "dead_end",

@@ -15,6 +15,7 @@ create type client as enum ('claude-code', 'codex', 'cursor', 'gemini');
 create type report_status as enum ('in_progress', 'blocked', 'done');
 create type visibility as enum ('shared', 'private');
 create type item_kind as enum ('decision', 'dead_end', 'human_correction', 'blocker');
+create type decision_area as enum ('technical', 'product');
 create type warning_kind as enum ('collision', 'rediscovery');
 create type person_status as enum ('active', 'leaving', 'left');
 create type knowledge_source as enum ('exit_interview');
@@ -79,6 +80,7 @@ create table report_items (
   visibility visibility not null,
   person text not null,
   kind item_kind not null,
+  decision_area decision_area,
   text text not null,
   reason text,
   ts timestamptz not null default now(),
@@ -160,7 +162,7 @@ Row level security is on with no policies, so only the server (service role or d
 - `report_progress`, in one transaction:
   1. Upsert `sessions` with the latest task, status, summary, the union of modules and tags, and increment `report_count`
   2. Insert one `reports` row
-  3. Insert one `report_items` row per decision, dead end, correction and blocker
+  3. Insert one `report_items` row per decision, dead end, correction and blocker. Decisions also set `decision_area`, and the `decisions` field is often absent
   4. Upsert `session_artifacts`
   5. Run the warning check, insert hits into `warnings`, return them
 - Exit-interview answers go into `knowledge_entries`

@@ -70,7 +70,7 @@ Input: `ReportProgressInput`
 | `artifacts` | `ArtifactRef[]` | `{kind, ref, label?}`, for example `{kind: "file", ref: "src/billing/retry.ts"}` or `{kind: "deal", ref: "Project Falcon"}` |
 | `modules` | string[] | Retrieval keys |
 | `tags` | string[] | |
-| `decisions` | `{choice, reason}[]` | |
+| `decisions` | `{area, choice, reason}[]`, optional | `area` is a `DecisionArea` (`technical` or `product`). Only important decisions that were explicitly made and matter for future work. Usually absent |
 | `dead_ends` | `{attempt, reason}[]` | |
 | `human_corrections` | `{correction, reason}[]` | |
 | `blockers` | string[] | |
