@@ -4,6 +4,7 @@ const ROWS: Array<[string, string[]]> = [
   ["Open the command palette", ["⌘", "K"]],
   ["Go to Live feed", ["G", "F"]],
   ["Go to Ask", ["G", "A"]],
+  ["Go to Automations", ["G", "U"]],
   ["Go to Collisions", ["G", "C"]],
   ["Go to Exit interview", ["G", "E"]],
   ["Go to Onboarding", ["G", "O"]],

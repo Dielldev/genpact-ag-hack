@@ -11,11 +11,13 @@ import type { ProfileInfo } from "./components/shell/ProfileMenu";
 import { Sidebar } from "./components/shell/Sidebar";
 import { Topbar } from "./components/shell/Topbar";
 import { Empty } from "./components/bits";
+import { useAutomations } from "./automations/useAutomations";
 import { useDashboard } from "./dashboard";
 import { useHashRoute, useLoad, useNow, useStored } from "./hooks";
 import { VIEWS } from "./nav";
 import { useShortcuts } from "./shortcuts";
 import { Ask } from "./views/Ask";
+import { Automations } from "./views/Automations";
 import { Collisions } from "./views/Collisions";
 import { ExitInterview } from "./views/ExitInterview";
 import { Feed } from "./views/Feed";
@@ -46,6 +48,7 @@ export function Shell({ me, onSignOut }: Props) {
   const health = useLoad(() => api.health(), [], 5000);
   const spaces = useLoad(() => api.workspaces(), [], 15_000);
   const data = useDashboard(workspace);
+  const auto = useAutomations(workspace, now);
   const online = health.data !== false && !health.error;
   const list = spaces.data?.workspaces ?? [];
   const collapsed = collapsedFlag === "1";
@@ -125,6 +128,7 @@ export function Shell({ me, onSignOut }: Props) {
           ) : (
             <>
               {view.id === "feed" && <Feed workspace={workspace} data={data} person={person} module={module} project={project} onPerson={setPerson} onModule={setModule} onProject={setProject} onOpen={openEvent} />}
+              {view.id === "automations" && <Automations workspace={workspace} auto={auto} onOpen={openEvent} />}
               {view.id === "collisions" && <Collisions data={data} onOpen={openEvent} />}
               {view.id === "ask" && <Ask workspace={workspace} onOpen={openEvent} seed={seed} onSeed={() => setSeed(null)} />}
               {view.id === "exit" && <ExitInterview workspace={workspace} />}
