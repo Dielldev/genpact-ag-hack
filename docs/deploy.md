@@ -76,4 +76,5 @@ The installer ends by printing a `status` command that shows whether the server 
 - The function sleeps when idle. The hook gives up after 2.5 seconds and fails open, so the first response after a quiet period may not be recorded.
 - Anyone with a key can read everything in the workspace. Keys are not per project.
 - `MESH_WORKSPACE` forces every report and every dashboard read into one workspace. Leave it unset to allow several.
+- The Vercel function refuses to start if `MESH_MEMBERS` is missing, so a forgotten variable shows an error instead of an open site. Set `MESH_ALLOW_OPEN=1` only if you really want a hosted server without keys.
 - Local development is unchanged: without `MESH_MEMBERS` nothing asks for a key.
