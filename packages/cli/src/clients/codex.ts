@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { Client, MCP_SERVER_NAME } from "@mesh/contract";
 import { homeDir } from "../config/paths.js";
 import { backupOnce, readJson, readText, writeAtomic, writeJson, type JsonObject } from "../util/jsonFile.js";
-import { hasTomlSection, removeTomlSection, tomlString, upsertTomlKey } from "../util/toml.js";
+import { hasTomlSection, removeTomlSection, tomlInlineTable, tomlString, upsertTomlKey } from "../util/toml.js";
 import { hasNestedHook, removeNestedHook, upsertNestedHook } from "./nestedHooks.js";
 import { HOOK_TIMEOUT_SECONDS, type ClientAdapter, type InstallContext } from "./types.js";
 
@@ -27,6 +27,7 @@ function install(ctx: InstallContext): string[] {
   let config = readText(configPath());
   config = upsertTomlKey(config, FEATURES_SECTION, HOOKS_FEATURE, "true");
   config = upsertTomlKey(config, MCP_SECTION, "url", tomlString(ctx.mcpUrl));
+  if (ctx.mcpHeaders) config = upsertTomlKey(config, MCP_SECTION, "http_headers", tomlInlineTable(ctx.mcpHeaders));
   backupOnce(configPath());
   writeAtomic(configPath(), config);
 

@@ -22,7 +22,7 @@ function install(ctx: InstallContext): string[] {
 
   const state = readJson<JsonObject>(userStatePath(), {});
   const servers = asObject(state.mcpServers);
-  writeJson(userStatePath(), { ...state, mcpServers: { ...servers, [MCP_SERVER_NAME]: { type: "http", url: ctx.mcpUrl } } });
+  writeJson(userStatePath(), { ...state, mcpServers: { ...servers, [MCP_SERVER_NAME]: { type: "http", url: ctx.mcpUrl, ...(ctx.mcpHeaders ? { headers: ctx.mcpHeaders } : {}) } } });
 
   return [
     `${settingsPath()}: Stop hook and permission for ${ALLOWED_TOOLS.join(", ")}`,

@@ -40,7 +40,7 @@ function install(ctx: InstallContext): string[] {
   writeJson(hooksPath(), withStopHandlers(config, handlers));
 
   const mcp = readJson<JsonObject>(mcpPath(), {});
-  writeJson(mcpPath(), { ...mcp, mcpServers: { ...asObject(mcp.mcpServers), [MCP_SERVER_NAME]: { url: ctx.mcpUrl } } });
+  writeJson(mcpPath(), { ...mcp, mcpServers: { ...asObject(mcp.mcpServers), [MCP_SERVER_NAME]: { url: ctx.mcpUrl, ...(ctx.mcpHeaders ? { headers: ctx.mcpHeaders } : {}) } } });
 
   return [`${hooksPath()}: stop hook (loop_limit ${LOOP_LIMIT})`, `${mcpPath()}: MCP server "${MCP_SERVER_NAME}"`];
 }

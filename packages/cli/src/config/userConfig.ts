@@ -5,15 +5,17 @@ export interface UserConfig {
   serverUrl: string;
   person: string;
   workspace: string;
+  key?: string;
 }
 
 const PERSON_PATTERN = /^[\p{L}\p{N} ._'-]{1,64}$/u;
+const KEY_PATTERN = /^[A-Za-z0-9._~-]{16,128}$/;
 const WORKSPACE_PATTERN = /^[a-z0-9][a-z0-9._-]{0,63}$/i;
 
 export function loadUserConfig(): UserConfig | null {
   const raw = readJson<Partial<UserConfig>>(configPath(), {});
   if (!raw.serverUrl || !raw.person || !raw.workspace) return null;
-  return { serverUrl: raw.serverUrl, person: raw.person, workspace: raw.workspace };
+  return { serverUrl: raw.serverUrl, person: raw.person, workspace: raw.workspace, ...(raw.key ? { key: raw.key } : {}) };
 }
 
 export function saveUserConfig(config: UserConfig): void {
@@ -43,6 +45,14 @@ export function validateWorkspace(input: string): string {
   const value = input.trim();
   if (!WORKSPACE_PATTERN.test(value)) {
     throw new Error("Workspace must be 1-64 letters, digits, dots, dashes or underscores");
+  }
+  return value;
+}
+
+export function validateKey(input: string): string {
+  const value = input.trim();
+  if (!KEY_PATTERN.test(value)) {
+    throw new Error("Key must be 16-128 letters, digits, dots, dashes, underscores or tildes");
   }
   return value;
 }

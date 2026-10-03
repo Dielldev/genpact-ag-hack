@@ -11,6 +11,7 @@ export enum McpTool {
 export enum ApiRoute {
   health = "/api/v1/health",
   turns = "/api/v1/turns",
+  me = "/api/v1/me",
   mcp = "/mcp",
 }
 

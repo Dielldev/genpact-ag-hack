@@ -37,7 +37,7 @@ export async function decide(event: StopEvent): Promise<HookDecision> {
     project: basename(event.cwd),
     visibility: project.visibility,
     ts: new Date().toISOString(),
-  });
+  }, config.key);
   if (!ping) return allow(AllowReason.serverUnavailable);
   if (!ping.request_report) return allow(AllowReason.serverDeclined);
 

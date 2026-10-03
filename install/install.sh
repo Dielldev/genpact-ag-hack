@@ -2,7 +2,13 @@
 set -eu
 
 REPO="Dielldev/genpact-ag-hack"
-BASE="${MESH_RELEASE_URL:-https://github.com/$REPO/releases/latest/download}"
+if [ -n "${MESH_URL:-}" ]; then
+  MESH_URL="${MESH_URL%/}"
+  BASE="${MESH_RELEASE_URL:-$MESH_URL/install}"
+  MESH_SERVER="${MESH_SERVER:-$MESH_URL}"
+else
+  BASE="${MESH_RELEASE_URL:-https://github.com/$REPO/releases/latest/download}"
+fi
 BIN="${MESH_HOME:-$HOME}/.mesh/bin"
 
 if ! command -v node >/dev/null 2>&1; then
