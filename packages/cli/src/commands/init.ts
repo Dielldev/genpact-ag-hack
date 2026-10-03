@@ -56,7 +56,7 @@ export async function runInit(options: InitOptions): Promise<number> {
       ? `\n✓ Server reachable at ${config.serverUrl}`
       : `\n! Server not reachable at ${config.serverUrl}. The hook stays silent until it is up.`,
   );
-  console.log("\nRestart any open agent sessions so they pick up the new hook. Run `mesh status` to check the setup.");
+  console.log("\nRestart any open agent sessions so they pick up the new hook.");
   return failures > 0 ? 1 : 0;
 }
 
@@ -83,12 +83,15 @@ async function chooseAdapters(clients: string | undefined, interactive: boolean)
       return adapterFor(client);
     });
   }
-  if (!interactive) return CLIENT_ADAPTERS.filter((adapter) => adapter.detect());
+  const detected = CLIENT_ADAPTERS.filter((adapter) => adapter.detect());
+  if (!interactive) return detected;
+  if (detected.length > 0) {
+    const names = detected.map((adapter) => adapter.label).join(", ");
+    if (await confirm(`Connect ${names}?`, true)) return detected;
+  }
   const chosen: ClientAdapter[] = [];
   for (const adapter of CLIENT_ADAPTERS) {
-    const detected = adapter.detect();
-    const label = `Install for ${adapter.label}${detected ? " (detected)" : ""}?`;
-    if (await confirm(label, detected)) chosen.push(adapter);
+    if (await confirm(`Connect ${adapter.label}?`, false)) chosen.push(adapter);
   }
   return chosen;
 }
