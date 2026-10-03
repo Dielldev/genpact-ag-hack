@@ -52,7 +52,7 @@ test("item payload keys match the ReportProgressInput fields", async () => {
   const report = readFileSync(join(CONTRACT_SRC, "report.ts"), "utf8");
   const rows = await ctx.q("select payload_key from item_kinds order by 1");
   for (const { payload_key } of rows) {
-    assert.match(report, new RegExp(`\\b${payload_key}\\s*:`), `${payload_key} missing from report.ts`);
+    assert.match(report, new RegExp(`\\b${payload_key}\\??\\s*:`), `${payload_key} missing from report.ts`);
   }
 });
 
