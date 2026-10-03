@@ -56,7 +56,7 @@ export function Ask({ workspace, onOpen, seed, onSeed }: Props) {
           <EmptyState commands={commands} onRun={run} />
         ) : (
           <div className="ask-turns">
-            {turns.map((t) => <TurnView key={t.id} turn={t} onOpen={onOpen} />)}
+            {turns.map((t) => <TurnView key={t.id} turn={t} workspace={workspace} onOpen={onOpen} />)}
           </div>
         )}
       </div>

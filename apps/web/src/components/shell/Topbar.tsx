@@ -1,14 +1,14 @@
-import type { PeopleResponse, WarningsResponse } from "@mesh/server/api";
-import { Bell, Check, Search, UserRound, type LucideIcon } from "lucide-react";
+import type { PeopleResponse, WarningsResponse, WorkspaceSummary } from "@mesh/server/api";
+import { Bell, Check, ChevronDown, Search, UserRound } from "lucide-react";
 import { Avatar } from "../bits";
 import { Menu } from "../Menu";
 import { ago, firstName, initials, minutesSince, plural } from "../../format";
 import { ProfileMenuBody, type ProfileInfo } from "./ProfileMenu";
 
 interface Props {
+  workspaces: WorkspaceSummary[];
   workspace: string;
-  title: string;
-  icon: LucideIcon;
+  onWorkspace: (w: string) => void;
   warnings: WarningsResponse | undefined;
   people: PeopleResponse | undefined;
   person: string;
@@ -20,24 +20,40 @@ interface Props {
   now: number;
 }
 
-export function Topbar({ workspace, title, icon: Icon, warnings, people, person, onPerson, onWarnings, onOpen, onSearch, profile, now }: Props) {
+export function Topbar({ workspaces, workspace, onWorkspace, warnings, people, person, onPerson, onWarnings, onOpen, onSearch, profile, now }: Props) {
+  const current = workspaces.find((w) => w.workspace === workspace);
   const list = warnings?.warnings ?? [];
   const fresh = list.filter((w) => minutesSince(w.created_at, now) < 24 * 60).length;
   return (
     <header className="topbar">
-      <div className="crumbs">
-        {workspace && <><span>{workspace}</span><span>/</span></>}
-        <strong><Icon size={14} />{title}</strong>
-      </div>
-      <div className="topbar-fill" />
       <button type="button" className="search" onClick={onSearch} aria-label="Search">
-        <Search size={14} />
-        <span>Search</span>
+        <Search size={17} />
+        <span>Search for a session, person or module</span>
         <kbd>⌘K</kbd>
       </button>
+      <Menu align="left" trigger={(t) => (
+        <button type="button" className="select" onClick={t} aria-label="Choose a workspace">
+          {current ? <strong>{current.workspace}</strong> : <span>Choose a workspace</span>}
+          <ChevronDown size={16} />
+        </button>
+      )}>
+        {(close) => (
+          <>
+            <div className="menu-head">Workspaces</div>
+            {workspaces.length === 0 && <div className="menu-empty">No workspace has shared reports yet</div>}
+            {workspaces.map((w) => (
+              <button key={w.workspace} type="button" className="menu-item" onClick={() => { onWorkspace(w.workspace); close(); }}>
+                <span className="menu-item-text"><strong>{w.workspace}</strong><span>{plural(w.people, "person").replace("persons", "people")} · {plural(w.sessions, "session")}</span></span>
+                {w.workspace === workspace && <Check size={16} className="menu-check" />}
+              </button>
+            ))}
+          </>
+        )}
+      </Menu>
+      <div className="topbar-fill" />
       <Menu trigger={(t) => (
         <button type="button" className="icon-btn" onClick={t} aria-label="Warnings">
-          <Bell size={16} strokeWidth={1.8} />
+          <Bell size={20} strokeWidth={1.8} />
           {fresh > 0 && <span className="badge-dot" />}
         </button>
       )} className="menu-wide">
@@ -61,7 +77,7 @@ export function Topbar({ workspace, title, icon: Icon, warnings, people, person,
       <span className="hide-sm">
         <Menu trigger={(t) => (
           <button type="button" className="icon-btn" onClick={t} aria-label="People">
-            <UserRound size={16} strokeWidth={1.8} />
+            <UserRound size={20} strokeWidth={1.8} />
           </button>
         )}>
           {(close) => (
@@ -74,7 +90,7 @@ export function Topbar({ workspace, title, icon: Icon, warnings, people, person,
               <div className="menu-scroll">
                 {(people?.people ?? []).map((p) => (
                   <button key={p.person} type="button" className="menu-item" onClick={() => { onPerson(p.person); close(); }}>
-                    <Avatar name={p.person} size={22} />
+                    <Avatar name={p.person} size={26} />
                     <span className="menu-item-text"><strong>{p.person}{p.status !== "active" ? ` · ${p.status}` : ""}</strong><span>{firstName(p.person)} · {plural(p.sessions, "session")}, {p.open_sessions} open</span></span>
                     {p.person === person && <Check size={16} className="menu-check" />}
                   </button>

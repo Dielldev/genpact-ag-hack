@@ -17,7 +17,7 @@ export function LeaderboardView({ block, onOpen }: { block: LeaderboardBlock; on
             const inner = (
               <>
                 <span className="rep-rank">{i + 1}</span>
-                <Avatar name={r.person} size={20} />
+                <Avatar name={r.person} size={28} />
                 <span className="rep-name">{r.person}</span>
                 <span className="rep-track"><i style={{ width: `${(r.value / max) * 100}%` }} /></span>
                 <span className="rep-num">{r.value}</span>

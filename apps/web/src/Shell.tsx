@@ -86,9 +86,6 @@ export function Shell({ me, onSignOut }: Props) {
   return (
     <div className={`shell${collapsed ? " shell-collapsed" : ""}`}>
       <Sidebar
-        workspaces={list}
-        workspace={workspace}
-        onWorkspace={setWorkspace}
         view={view.id}
         go={go}
         collapsed={collapsed}
@@ -105,9 +102,9 @@ export function Shell({ me, onSignOut }: Props) {
       />
       <div className="main">
         <Topbar
+          workspaces={list}
           workspace={workspace}
-          title={view.label}
-          icon={view.icon}
+          onWorkspace={setWorkspace}
           warnings={data.warnings.data}
           people={data.people.data}
           person={person}

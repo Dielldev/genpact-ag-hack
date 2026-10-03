@@ -30,16 +30,17 @@ function Failure({ message }: { message: string }) {
 
 interface Props {
   turn: Turn;
+  workspace: string;
   onOpen: (id: string) => void;
 }
 
-export function TurnView({ turn, onOpen }: Props) {
+export function TurnView({ turn, workspace, onOpen }: Props) {
   const wide = Boolean(turn.answer?.blocks?.length);
   return (
     <div className={`ask-turn${wide ? " ask-turn-wide" : ""}`}>
       <div className="ask-q"><span>{turn.question}</span></div>
       <div className="ask-res">
-        {turn.error ? <Failure message={turn.error} /> : turn.answer ? <AnswerView question={turn.question} answer={turn.answer} now={turn.at} onOpen={onOpen} /> : <Pending />}
+        {turn.error ? <Failure message={turn.error} /> : turn.answer ? <AnswerView question={turn.question} workspace={workspace} answer={turn.answer} now={turn.at} onOpen={onOpen} /> : <Pending />}
       </div>
     </div>
   );
