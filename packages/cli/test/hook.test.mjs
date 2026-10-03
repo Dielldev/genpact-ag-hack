@@ -47,6 +47,8 @@ describe("hook", () => {
       assert.match(reason, /report_progress/);
       assert.match(reason, new RegExp(`session_id "${id}"`));
       assert.match(reason, /person "Test User"/);
+      assert.match(reason, /Optional decisions \(\{area: technical \| product, choice, reason\}\)/);
+      assert.match(reason, /omit the field entirely/);
 
       const ping = server.pings.find((entry) => entry.session_id === id);
       assert.equal(ping.client, client);
