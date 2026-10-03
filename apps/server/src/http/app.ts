@@ -2,11 +2,14 @@ import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { ApiRoute, type HealthResponse } from "@mesh/contract";
+import type { MeResponse } from "../api/types.js";
 import type { AppDeps } from "../deps.js";
 import { buildMcpServer, SERVER_VERSION } from "../mcp/server.js";
 import { recordTurn } from "../reportProgress.js";
 import { ValidationError } from "../schemas.js";
 import { HttpError, readJson } from "./errors.js";
+import { authorize, identityOf, withIdentity } from "./auth.js";
+import { registerInstallRoutes } from "./install.js";
 import { registerDashboardRoutes } from "./routes.js";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
@@ -46,14 +49,26 @@ export function createApp(deps: AppDeps): Hono {
     return c.json({ error: { code: "internal", message: "Internal server error" } }, 500);
   });
 
+  const gate = async (c: Context, next: () => Promise<void>) => {
+    if (c.req.method === "OPTIONS" || c.req.path === ApiRoute.health) return next();
+    authorize(deps, c.req.header("authorization"));
+    return next();
+  };
+  app.use("/api/v1/*", gate);
+  app.use(ApiRoute.mcp, gate);
+
+  app.get(ApiRoute.me, (c) => {
+    const identity = identityOf(deps, c.req.header("authorization"));
+    return c.json({ person: identity.person ?? null, workspace: identity.workspace ?? null, auth: deps.config.members.length > 0 } satisfies MeResponse);
+  });
   app.get(ApiRoute.health, (c) => c.json({ ok: true, version: SERVER_VERSION } satisfies HealthResponse));
-  app.post(ApiRoute.turns, async (c) => c.json(await recordTurn(deps, await readJson(c))));
+  app.post(ApiRoute.turns, async (c) => c.json(await recordTurn(deps, withIdentity(await readJson(c), identityOf(deps, c.req.header("authorization"))))));
 
   app.post(ApiRoute.mcp, async (c) => {
     if (!hostAllowed(c.req.header("host"), deps.config.allowedHosts)) {
       return c.json(rpcError("Host not allowed. Add it to ALLOWED_HOSTS."), 403);
     }
-    const server = buildMcpServer(deps);
+    const server = buildMcpServer(deps, identityOf(deps, c.req.header("authorization")));
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     try {
       await server.connect(transport);
@@ -69,6 +84,7 @@ export function createApp(deps: AppDeps): Hono {
   app.get(ApiRoute.mcp, notAllowed);
   app.delete(ApiRoute.mcp, notAllowed);
 
+  registerInstallRoutes(app, deps);
   registerDashboardRoutes(app, deps);
   app.notFound((c) => c.json({ error: { code: "not_found", message: `No route for ${c.req.method} ${c.req.path}` } }, 404));
   return app;

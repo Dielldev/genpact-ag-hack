@@ -3,6 +3,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { MCP_SERVER_NAME, McpTool } from "@mesh/contract";
 import type { AppDeps } from "../deps.js";
+import type { Identity } from "../http/auth.js";
 import { ask } from "../intelligence/ask.js";
 import { reportProgress, reportText } from "../reportProgress.js";
 import { reportInputShape, reportOutputShape, ValidationError } from "../schemas.js";
@@ -48,7 +49,7 @@ async function guarded(deps: AppDeps, tool: string, work: () => Promise<CallTool
 
 const ws = z.string().min(1).describe('Team workspace. Example: "acme-dev"');
 
-export function buildMcpServer(deps: AppDeps): McpServer {
+export function buildMcpServer(deps: AppDeps, identity: Identity = {}): McpServer {
   const server = new McpServer({ name: MCP_SERVER_NAME, version: SERVER_VERSION }, { instructions: SERVER_INSTRUCTIONS });
 
   server.registerTool(
@@ -56,7 +57,7 @@ export function buildMcpServer(deps: AppDeps): McpServer {
     { title: "Report progress", description: REPORT_PROGRESS_DESCRIPTION, inputSchema: describedShape(), outputSchema: reportOutputShape },
     (args) =>
       guarded(deps, McpTool.reportProgress, async () => {
-        const out = await reportProgress(deps, args);
+        const out = await reportProgress(deps, { ...args, ...identity });
         return jsonResult({ ...out }, reportText(out));
       }),
   );
@@ -68,8 +69,9 @@ export function buildMcpServer(deps: AppDeps): McpServer {
       description: LIST_MY_TICKETS_DESCRIPTION,
       inputSchema: { workspace: ws, person: z.string().min(1).describe('The user. Example: "Ana Lee"') },
     },
-    ({ workspace, person }) =>
+    (args) =>
       guarded(deps, McpTool.listMyTickets, async () => {
+        const { workspace, person } = { ...args, ...identity };
         const tickets = await deps.api.tickets(workspace, { person });
         const text = tickets.length ? tickets.map((t) => `${t.ref}: ${t.title} (${t.status})`).join("\n") : "No open tickets.";
         return jsonResult({ tickets }, text);
@@ -79,8 +81,9 @@ export function buildMcpServer(deps: AppDeps): McpServer {
   server.registerTool(
     McpTool.getTicket,
     { title: "Get ticket", description: GET_TICKET_DESCRIPTION, inputSchema: { workspace: ws, ref: z.string().min(1).describe('Ticket ref. Example: "BILL-142"') } },
-    ({ workspace, ref }) =>
+    (args) =>
       guarded(deps, McpTool.getTicket, async () => {
+        const { workspace, ref } = { ...args, ...(identity.workspace ? { workspace: identity.workspace } : {}) };
         const detail = await ticketDetail(deps, workspace, ref);
         if (!detail) return jsonResult({ ref, found: false }, `No ticket or reports found for ${ref}.`);
         const lines = [
@@ -112,7 +115,7 @@ export function buildMcpServer(deps: AppDeps): McpServer {
     },
     (args) =>
       guarded(deps, McpTool.createTicket, async () => {
-        const ticket = await createTicket(deps, args);
+        const ticket = await createTicket(deps, { ...args, ...identity, ...(identity.person ? { created_by: identity.person } : {}) });
         return jsonResult({ ticket }, `Created ${ticket.ref}. Use it as ticket_ref in report_progress.`);
       }),
   );
@@ -124,8 +127,9 @@ export function buildMcpServer(deps: AppDeps): McpServer {
       description: ASK_TEAM_DESCRIPTION,
       inputSchema: { workspace: ws, question: z.string().min(1).describe('Example: "Why does billing retry read dunning_config?"') },
     },
-    ({ workspace, question }) =>
+    (args) =>
       guarded(deps, McpTool.askTeam, async () => {
+        const { workspace, question } = { ...args, ...(identity.workspace ? { workspace: identity.workspace } : {}) };
         const res = await ask(deps, workspace, question);
         return jsonResult({ answer: res.answer, no_record: res.no_record, citations: res.citations }, res.answer);
       }),

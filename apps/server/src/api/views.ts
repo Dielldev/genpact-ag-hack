@@ -30,6 +30,26 @@ export interface Ticket {
   created_at: string;
 }
 
+export interface Project {
+  project_id: string;
+  workspace: string;
+  title: string;
+  github_url: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export interface ProjectsResponse {
+  workspace: string;
+  projects: Project[];
+}
+
+export interface MeResponse {
+  person: string | null;
+  workspace: string | null;
+  auth: boolean;
+}
+
 export interface TicketNote {
   event_id: string | null;
   person: string;

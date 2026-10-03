@@ -14,6 +14,7 @@ packages/
 docs/
   server-contract.md   what the server must expose for the hook to work
   database.md          Postgres schema and queries
+  deploy.md            Supabase, team keys and Vercel, step by step
 ```
 
 ## Getting started
