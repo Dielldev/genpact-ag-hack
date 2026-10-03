@@ -8,7 +8,8 @@ export function useDashboard(workspace: string) {
   const warnings = useLoad(() => idle(workspace, () => api.warnings(workspace)), [workspace], 4000);
   const people = useLoad(() => idle(workspace, () => api.people(workspace)), [workspace], 15_000);
   const modules = useLoad(() => idle(workspace, () => api.modules(workspace)), [workspace], 30_000);
-  return { feed, warnings, people, modules };
+  const projects = useLoad(() => idle(workspace, () => api.projects(workspace)), [workspace], 15_000);
+  return { feed, warnings, people, modules, projects };
 }
 
 export type Dashboard = ReturnType<typeof useDashboard>;

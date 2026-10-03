@@ -5,6 +5,7 @@ import type {
   ExitQuestion,
   KnowledgeEntry,
   PersonSummary,
+  Project,
   Ticket,
   WorkspaceSummary,
 } from "../api/types.js";
@@ -96,6 +97,8 @@ export function createMeshApi(db: Db) {
     vocabulary: (ws: string) => db.rpc<{ people: string[]; modules: string[]; tags: string[] }>("workspace_vocabulary", { p_workspace: ws }),
     setPersonStatus: (ws: string, person: string, status: PersonStatus) =>
       db.rpc<{ person: string; status: PersonStatus }>("set_person_status", { p: { workspace: ws, person, status } }),
+    createProject: (input: Record<string, unknown>) => db.rpc<Project>("create_project", { p: input }),
+    projects: (ws: string) => db.rpc<Project[]>("list_projects", { p_workspace: ws }),
     createTicket: (input: Record<string, unknown>) => db.rpc<Ticket>("create_ticket", { p: input }),
     tickets: (ws: string, filter: { person?: string | null; include_closed?: boolean; ref?: string } = {}) =>
       db.rpc<Ticket[]>("list_tickets", { p_workspace: ws, p_filter: clean(filter) }),

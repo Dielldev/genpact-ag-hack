@@ -1,5 +1,6 @@
-import type { AskResponse, EventRecord, EventResponse, ExitInterviewResponse, FeedResponse, OnboardingResponse, PeopleResponse, WarningsResponse, WorkspacesResponse } from "@mesh/server/api";
+import type { AskResponse, EventRecord, EventResponse, ExitInterviewResponse, FeedResponse, OnboardingResponse, PeopleResponse, Project, WarningsResponse, WorkspacesResponse } from "@mesh/server/api";
 import type { MeshClient, ModulesResponse } from "../api";
+import { isGithubUrl } from "../projects";
 import raw from "./snapshot.json";
 import { backdate, minutesFor } from "./spread";
 
@@ -51,8 +52,20 @@ function answerFor(ws: string, question: string): AskResponse {
   return { answer: `Matching records:\n${lines.join("\n")}`, no_record: false, citations: hits.map((e) => e.event_id ?? ""), sources: hits, knowledge: [], plan, degraded: "Demo mode: offline sample data, no live server." };
 }
 
+const projectLists = new Map<string, Project[]>();
+
+function projectsOf(ws: string): Project[] {
+  const have = projectLists.get(ws);
+  if (have) return have;
+  const demo = (n: number, title: string, github_url: string | null): Project => ({ project_id: `demo-project-${n}`, workspace: ws, title, github_url, created_by: "demo", created_at: new Date(Date.now() - n * 86_400_000).toISOString() });
+  const seeded = [demo(2, "Billing Service", "https://github.com/acme/billing-service"), demo(1, "Mobile App", null)];
+  projectLists.set(ws, seeded);
+  return seeded;
+}
+
 export const mockClient: MeshClient = {
   health: () => delay(true),
+  me: () => delay({ person: null, workspace: null, auth: false }),
   workspaces: () => delay(data.workspaces),
   people: (ws) => delay(space(ws).people),
   modules: (ws) => delay(space(ws).modules),
@@ -91,5 +104,18 @@ export const mockClient: MeshClient = {
   onboarding: (ws, module) => {
     const o = space(ws).onboarding[module];
     return o ? delay(o) : Promise.reject(new Error("Not in the demo data"));
+  },
+  projects: (ws) => delay({ workspace: ws, projects: projectsOf(ws) }),
+  createProject: (ws, input) => {
+    const title = input.title.trim();
+    const link = input.github_url?.trim() ?? "";
+    if (!title) return Promise.reject(new Error("title is required"));
+    if (link && !isGithubUrl(link)) return Promise.reject(new Error("github_url must look like https://github.com/owner/repo"));
+    const list = projectsOf(ws);
+    const existing = list.find((p) => p.title.toLowerCase() === title.toLowerCase());
+    if (existing) return delay(existing);
+    const created: Project = { project_id: `demo-project-${Date.now()}`, workspace: ws, title, github_url: link || null, created_by: "demo", created_at: new Date().toISOString() };
+    list.push(created);
+    return delay(created);
   },
 };

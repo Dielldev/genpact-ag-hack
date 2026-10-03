@@ -2,8 +2,8 @@ import type { PeopleResponse, WarningsResponse, WorkspaceSummary } from "@mesh/s
 import { Bell, Check, ChevronDown, Search, UserRound } from "lucide-react";
 import { Avatar } from "../bits";
 import { Menu } from "../Menu";
-import { ago, firstName, minutesSince, plural } from "../../format";
-import { ProfileMenuBody } from "./ProfileMenu";
+import { ago, firstName, initials, minutesSince, plural } from "../../format";
+import { ProfileMenuBody, type ProfileInfo } from "./ProfileMenu";
 
 interface Props {
   workspaces: WorkspaceSummary[];
@@ -16,13 +16,11 @@ interface Props {
   onWarnings: () => void;
   onOpen: (id: string) => void;
   onSearch: () => void;
-  online: boolean;
-  demo: boolean;
-  onHelp: () => void;
+  profile: ProfileInfo;
   now: number;
 }
 
-export function Topbar({ workspaces, workspace, onWorkspace, warnings, people, person, onPerson, onWarnings, onOpen, onSearch, online, demo, onHelp, now }: Props) {
+export function Topbar({ workspaces, workspace, onWorkspace, warnings, people, person, onPerson, onWarnings, onOpen, onSearch, profile, now }: Props) {
   const current = workspaces.find((w) => w.workspace === workspace);
   const list = warnings?.warnings ?? [];
   const fresh = list.filter((w) => minutesSince(w.created_at, now) < 24 * 60).length;
@@ -102,8 +100,8 @@ export function Topbar({ workspaces, workspace, onWorkspace, warnings, people, p
           )}
         </Menu>
       </span>
-      <Menu trigger={(t) => <button type="button" className="me" onClick={t} aria-label="PM menu">PM</button>}>
-        {(close) => <ProfileMenuBody online={online} demo={demo} onHelp={onHelp} close={close} />}
+      <Menu trigger={(t) => <button type="button" className="me" onClick={t} aria-label={profile.person ? "Account menu" : "PM menu"}>{profile.person ? initials(profile.person) : "PM"}</button>}>
+        {(close) => <ProfileMenuBody profile={profile} close={close} />}
       </Menu>
     </header>
   );

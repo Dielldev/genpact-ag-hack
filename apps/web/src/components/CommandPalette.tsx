@@ -1,5 +1,5 @@
 import type { FeedItem } from "@mesh/server/api";
-import { Boxes, CornerDownLeft, Keyboard, LayoutGrid, MessageSquareText, Search, Sparkles, UserRound, Workflow, type LucideIcon } from "lucide-react";
+import { Boxes, CornerDownLeft, FolderKanban, Keyboard, LayoutGrid, MessageSquareText, Search, Sparkles, Terminal, UserRound, Workflow, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { VIEWS } from "../nav";
 
@@ -8,14 +8,17 @@ interface Props {
   go: (id: string) => void;
   people: string[];
   modules: string[];
+  projects: string[];
   sessions: FeedItem[];
   workspaces: string[];
   onPerson: (p: string) => void;
   onModule: (m: string) => void;
+  onProject: (t: string) => void;
   onOpen: (id: string) => void;
   onWorkspace: (w: string) => void;
   onAsk: (q: string) => void;
   onHelp: () => void;
+  onInstall: () => void;
 }
 
 interface Item {
@@ -43,8 +46,10 @@ export function CommandPalette(p: Props) {
     const all: Item[] = [
       ...VIEWS.map((v) => ({ id: `v-${v.id}`, group: "Navigate", label: v.label, hint: v.keys.toUpperCase(), icon: v.icon, run: done(() => p.go(v.id)) })),
       { id: "help", group: "Navigate", label: "Keyboard shortcuts", hint: "?", icon: Keyboard, run: done(p.onHelp) },
+      { id: "install", group: "Navigate", label: "Install the hook", hint: "Copy the install command", icon: Terminal, run: done(p.onInstall) },
       ...p.workspaces.map((w) => ({ id: `w-${w}`, group: "Workspaces", label: `Switch to ${w}`, icon: LayoutGrid, run: done(() => p.onWorkspace(w)) })),
       ...p.people.map((n) => ({ id: `p-${n}`, group: "People", label: n, hint: "Focus on the feed", icon: UserRound, run: done(() => { p.onPerson(n); p.go("feed"); }) })),
+      ...p.projects.map((t) => ({ id: `pr-${t}`, group: "Projects", label: t, hint: "Filter the feed", icon: FolderKanban, run: done(() => { p.onProject(t); p.go("feed"); }) })),
       ...p.modules.map((m) => ({ id: `m-${m}`, group: "Modules", label: m, hint: "Filter the feed", icon: Boxes, run: done(() => { p.onModule(m); p.go("feed"); }) })),
       ...p.sessions.map((s) => ({ id: `s-${s.key}`, group: "Sessions", label: s.task ?? "Active session", hint: s.person, icon: Workflow, run: done(() => p.onOpen(s.event_id ?? String(s.session_pk))) })),
     ];
@@ -58,7 +63,7 @@ export function CommandPalette(p: Props) {
     });
     const ask: Item[] = q ? [{ id: "ask", group: "Ask", label: `Ask Mesh: “${query.trim()}”`, hint: "Search the shared record", icon: Sparkles, run: done(() => p.onAsk(query.trim())) }] : [];
     return [...ask, ...capped];
-  }, [q, p.people, p.modules, p.sessions, p.workspaces]);
+  }, [q, p.people, p.modules, p.projects, p.sessions, p.workspaces]);
 
   useEffect(() => {
     setIndex(0);

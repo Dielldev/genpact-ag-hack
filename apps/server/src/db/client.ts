@@ -1,4 +1,4 @@
-import { PGlite } from "@electric-sql/pglite";
+import type { PGlite } from "@electric-sql/pglite";
 import { createClient } from "@supabase/supabase-js";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -51,7 +51,8 @@ function migrationFiles(): string[] {
 }
 
 export async function createPgliteDb(dataDir?: string): Promise<Db> {
-  const db = new PGlite(dataDir);
+  const { PGlite: Pglite } = await import("@electric-sql/pglite");
+  const db: PGlite = new Pglite(dataDir);
   const [applied] = (
     await db.query<{ exists: boolean }>("select to_regclass('public.sessions') is not null as exists")
   ).rows;

@@ -5,6 +5,7 @@ import { Empty, ErrorState, Loading } from "../components/bits";
 import { FilterChip } from "../components/FilterChip";
 import { minutesSince } from "../format";
 import { useNow } from "../hooks";
+import { matchProject } from "../projects";
 import { useShortcuts } from "../shortcuts";
 import { BarChart } from "./feed/BarChart";
 import { ChartCard } from "./feed/ChartCard";
@@ -23,14 +24,16 @@ interface Props {
   data: Dashboard;
   person: string;
   module: string;
+  project: string;
   onPerson: (p: string) => void;
   onModule: (m: string) => void;
+  onProject: (t: string) => void;
   onOpen: (id: string) => void;
 }
 
 const TILE_IDS: TileId[] = ["all", "progress", "blocked", "stuck", "done", "collisions"];
 
-export function Feed({ workspace, data, person, module, onPerson, onModule, onOpen }: Props) {
+export function Feed({ workspace, data, person, module, project, onPerson, onModule, onProject, onOpen }: Props) {
   const now = useNow(5000);
   const [tile, setTile] = useState<TileId>("all");
   const [period, setPeriod] = useState(PERIODS[1]!);
@@ -42,7 +45,11 @@ export function Feed({ workspace, data, person, module, onPerson, onModule, onOp
   const people = data.people.data?.people ?? [];
   const changed = useChanged(all);
 
-  const scoped = useMemo(() => (all ?? []).filter((i) => (!person || i.person === person) && (!module || i.modules.includes(module))), [all, person, module]);
+  const projects = data.projects.data?.projects;
+  const scoped = useMemo(() => {
+    const inProject = matchProject(projects ?? [], project);
+    return (all ?? []).filter((i) => (!person || i.person === person) && (!module || i.modules.includes(module)) && inProject(i));
+  }, [all, person, module, project, projects]);
   const counts = Object.fromEntries(TILE_IDS.map((t) => [t, scoped.filter((i) => passes(t, i, now, warnings)).length])) as Record<TileId, number>;
   const visible = scoped.filter((i) => passes(tile, i, now, warnings));
   const groups = groupItems(visible, now);
@@ -103,6 +110,7 @@ export function Feed({ workspace, data, person, module, onPerson, onModule, onOp
         <div className="toolbar">
           <h3>Sessions <span className="count">{visible.length}</span></h3>
           <FilterChip label="Person" value={person} options={people.map((p) => p.person)} onPick={onPerson} />
+          <FilterChip label="Project" value={project} options={(projects ?? []).map((p) => p.title)} onPick={onProject} />
           <FilterChip label="Module" value={module} options={data.modules.data?.modules ?? []} onPick={onModule} />
         </div>
         {all && visible.length === 0 ? (

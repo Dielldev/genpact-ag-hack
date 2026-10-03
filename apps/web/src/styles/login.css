@@ -1,0 +1,14 @@
+.gate { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.login-card, .splash { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-card); padding: 36px 32px 32px; display: grid; gap: 14px; }
+.login-card { text-align: center; animation: pop 0.18s ease-out; }
+.login-card .brand-mark { width: 46px; height: 46px; border-radius: 14px; justify-self: center; margin-bottom: 4px; }
+.login-card .brand-mark svg { width: 24px; height: 24px; }
+.login-card h1 { font-family: var(--display); font-weight: 400; font-size: 26px; letter-spacing: -0.03em; }
+.login-card input { width: 100%; text-align: left; }
+.login-card input[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 4px var(--red-50); }
+.login-card .btn { width: 100%; padding: 11px 16px; }
+.login-error { color: var(--red); font-weight: 600; font-size: 13px; text-align: left; }
+.splash { justify-items: center; }
+.splash-mark { width: 46px; height: 46px; border-radius: 14px; }
+.splash-line { height: 14px; width: 80%; }
+.splash-short { width: 55%; }

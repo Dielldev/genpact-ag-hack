@@ -9,6 +9,10 @@ The server receives data through two separate channels:
 
 ## REST
 
+### `GET /api/v1/me` (`ApiRoute.me`)
+
+Returns `{ person, workspace, auth }` for the bearer key (`person` and `workspace` are null when the server has no keys configured, `auth` says whether keys are required). `401` when keys are required and the key is missing or wrong. `mesh init` uses it to take the name and workspace from the key.
+
 ### `GET /api/v1/health` (`ApiRoute.health`)
 
 Any 2xx. Used by `mesh init` and `mesh status`.
@@ -48,7 +52,7 @@ How the hook behaves:
 ## MCP
 
 - Transport: Streamable HTTP at `/mcp` (`ApiRoute.mcp`)
-- Auth: none for the demo. The installer does not write auth headers yet
+- Auth: when the server has team keys configured (`MESH_MEMBERS`), every route except `GET /api/v1/health` needs `Authorization: Bearer <key>`, and `mesh init --key` writes that header into each client's MCP config. The person (and the workspace, when `MESH_WORKSPACE` is set) come from the key, not from the request body. With no keys configured the server is open (local development)
 - `mesh init` registers the server as `mesh` (`MCP_SERVER_NAME`) in every client and pre-approves `mcp__mesh__report_progress` in Claude Code, so the tool name must be exactly `report_progress` (`McpTool.reportProgress`)
 - Tool descriptions are part of the agent's instructions, so write them carefully
 

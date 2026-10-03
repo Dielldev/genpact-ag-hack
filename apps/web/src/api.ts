@@ -5,11 +5,17 @@ import type {
   ExitInterviewResponse,
   FeedResponse,
   KnowledgeEntry,
+  MeResponse,
   OnboardingResponse,
   PeopleResponse,
+  Project,
+  ProjectsResponse,
   WarningsResponse,
   WorkspacesResponse,
 } from "@mesh/server/api";
+import { getKey, notifyUnauthorized } from "./auth";
+
+export { clearKey, getKey, onUnauthorized, setKey } from "./auth";
 
 export interface ModulesResponse {
   workspace: string;
@@ -25,8 +31,14 @@ export interface FeedFilters {
   since?: string;
 }
 
+export interface NewProject {
+  title: string;
+  github_url?: string;
+}
+
 export interface MeshClient {
   health(): Promise<boolean>;
+  me(): Promise<MeResponse>;
   workspaces(): Promise<WorkspacesResponse>;
   people(ws: string): Promise<PeopleResponse>;
   modules(ws: string): Promise<ModulesResponse>;
@@ -39,17 +51,32 @@ export interface MeshClient {
   generateQuestions(ws: string, person: string, force: boolean): Promise<ExitInterviewResponse>;
   saveAnswer(ws: string, person: string, questionId: string, answer: string): Promise<KnowledgeEntry>;
   onboarding(ws: string, module: string): Promise<OnboardingResponse>;
+  projects(ws: string): Promise<ProjectsResponse>;
+  createProject(ws: string, input: NewProject): Promise<Project>;
 }
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status = 0) {
+    super(message);
+    this.status = status;
+  }
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const key = getKey();
   const res = await fetch(`/api/v1${path}`, {
     ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "content-type": "application/json",
+      ...(key ? { authorization: `Bearer ${key}` } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(body?.error?.message ?? `Request failed (${res.status})`);
+  if (res.status === 401) notifyUnauthorized();
+  if (!res.ok) throw new ApiError(body?.error?.message ?? `Request failed (${res.status})`, res.status);
   return body as T;
 }
 
@@ -63,6 +90,7 @@ const enc = encodeURIComponent;
 
 const httpClient: MeshClient = {
   health: () => fetch("/api/v1/health").then((r) => r.ok).catch(() => false),
+  me: () => request("/me"),
   workspaces: () => request("/workspaces"),
   people: (ws) => request(`/people${q({ workspace: ws })}`),
   modules: (ws) => request(`/modules${q({ workspace: ws })}`),
@@ -75,6 +103,8 @@ const httpClient: MeshClient = {
   generateQuestions: (ws, person, force) => post(`/exit-interview/${enc(person)}/questions`, { workspace: ws, force }),
   saveAnswer: (ws, person, questionId, answer) => post(`/exit-interview/${enc(person)}/answers`, { workspace: ws, question_id: questionId, answer }),
   onboarding: (ws, module) => request(`/onboarding/${enc(module)}${q({ workspace: ws })}`),
+  projects: (ws) => request(`/projects${q({ workspace: ws })}`),
+  createProject: (ws, input) => post("/projects", { workspace: ws, ...input }),
 };
 
 export const MOCK = import.meta.env.VITE_MOCK === "1";

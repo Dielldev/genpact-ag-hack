@@ -5,19 +5,14 @@ import type { AppDeps } from "../deps.js";
 import { ask } from "../intelligence/ask.js";
 import { exitInterview, generateQuestions, saveAnswer } from "../intelligence/exitInterview.js";
 import { ValidationError } from "../schemas.js";
+import { createProject } from "../projects.js";
 import { createTicket, onboarding, ticketDetail, warningCards } from "../views.js";
 import { toFeedItem } from "./feed.js";
+import { identityOf, withIdentity } from "./auth.js";
 import { HttpError, readJson } from "./errors.js";
 
 const V1 = "/api/v1";
 const FEED_STATUSES = new Set<string>([...Object.values(ReportStatus), "active"]);
-
-function workspaceOf(c: Context, body?: unknown): string {
-  const fromBody = body && typeof body === "object" ? (body as Record<string, unknown>).workspace : undefined;
-  const ws = c.req.query("workspace") ?? (typeof fromBody === "string" ? fromBody : undefined);
-  if (!ws || !ws.trim()) throw new HttpError(400, "workspace_required", "workspace is required");
-  return ws.trim();
-}
 
 function isoOrUndefined(value: string | undefined): string | undefined {
   if (!value) return undefined;
@@ -31,6 +26,25 @@ function field(body: unknown, key: string): string {
 }
 
 export function registerDashboardRoutes(app: Hono, deps: AppDeps): void {
+  const workspaceOf = (c: Context, body?: unknown): string => {
+    if (deps.config.workspace) return deps.config.workspace;
+    const fromBody = body && typeof body === "object" ? (body as Record<string, unknown>).workspace : undefined;
+    const ws = c.req.query("workspace") ?? (typeof fromBody === "string" ? fromBody : undefined);
+    if (!ws || !ws.trim()) throw new HttpError(400, "workspace_required", "workspace is required");
+    return ws.trim();
+  };
+
+  app.get(`${V1}/projects`, async (c) => {
+    const ws = workspaceOf(c);
+    return c.json({ workspace: ws, projects: await deps.api.projects(ws) });
+  });
+  app.post(`${V1}/projects`, async (c) => {
+    const body = await readJson(c);
+    const who = identityOf(deps, c.req.header("authorization"));
+    const createdBy = who.person ?? field(body, "created_by") ?? "web";
+    return c.json(await createProject(deps, { ...(body as object), workspace: workspaceOf(c, body), created_by: createdBy || "web" }), 201);
+  });
+
   app.get(`${V1}/workspaces`, async (c) => c.json({ workspaces: await deps.api.workspaces() }));
 
   app.get(`${V1}/people`, async (c) => {
@@ -87,7 +101,11 @@ export function registerDashboardRoutes(app: Hono, deps: AppDeps): void {
     const ws = workspaceOf(c);
     return c.json({ workspace: ws, tickets: await deps.api.tickets(ws, { person: c.req.query("person"), include_closed: c.req.query("include_closed") === "1" }) });
   });
-  app.post(`${V1}/tickets`, async (c) => c.json(await createTicket(deps, await readJson(c)), 201));
+  app.post(`${V1}/tickets`, async (c) => {
+    const identity = identityOf(deps, c.req.header("authorization"));
+    const bound = { ...identity, ...(identity.person ? { created_by: identity.person } : {}) };
+    return c.json(await createTicket(deps, withIdentity(await readJson(c), bound)), 201);
+  });
   app.get(`${V1}/tickets/:ref`, async (c) => {
     const detail = await ticketDetail(deps, workspaceOf(c), c.req.param("ref"));
     if (!detail) throw new HttpError(404, "not_found", "No ticket or reports for that ref");

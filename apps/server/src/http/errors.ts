@@ -2,7 +2,7 @@ import type { Context } from "hono";
 
 export class HttpError extends Error {
   constructor(
-    readonly status: 400 | 404,
+    readonly status: 400 | 401 | 404,
     readonly code: string,
     message: string,
   ) {
