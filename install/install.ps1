@@ -2,7 +2,9 @@ $ErrorActionPreference = 'Stop'
 
 function Install-Mesh {
     $repo = 'Dielldev/genpact-ag-hack'
-    $base = if ($env:MESH_RELEASE_URL) { $env:MESH_RELEASE_URL } else { "https://github.com/$repo/releases/latest/download" }
+    $site = if ($env:MESH_URL) { $env:MESH_URL.TrimEnd('/') } else { '' }
+    $base = if ($env:MESH_RELEASE_URL) { $env:MESH_RELEASE_URL } elseif ($site) { "$site/install" } else { "https://github.com/$repo/releases/latest/download" }
+    $server = if ($env:MESH_SERVER) { $env:MESH_SERVER } else { $site }
     $root = if ($env:MESH_HOME) { $env:MESH_HOME } else { $HOME }
     $bin = Join-Path $root '.mesh\bin'
 
@@ -35,7 +37,7 @@ function Install-Mesh {
     }
 
     $initArgs = @('init')
-    if ($env:MESH_SERVER) { $initArgs += @('--server', $env:MESH_SERVER) }
+    if ($server) { $initArgs += @('--server', $server) }
     if ($env:MESH_WORKSPACE) { $initArgs += @('--workspace', $env:MESH_WORKSPACE) }
     if ($env:MESH_CLIENTS) { $initArgs += @('--clients', $env:MESH_CLIENTS) }
 

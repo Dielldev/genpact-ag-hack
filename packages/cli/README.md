@@ -37,6 +37,14 @@ node packages/cli/dist/cli.mjs uninstall
 
 Non-interactive: `mesh init --yes --server https://mesh.example.com --person "Ana Lee" --workspace acme --clients claude-code,cursor`
 
+## Personal key
+
+When the server is configured with team keys, pass yours with `--key <key>` or `MESH_KEY`. `init` asks the server who the key belongs to (`GET /api/v1/me`) and takes the name and workspace from it, then stores the key in `~/.mesh/config.json`. The hook sends it as `Authorization: Bearer <key>` on every ping and the MCP connection is registered with the same header. `mesh status` checks that the server still accepts it.
+
+## Hosted installer
+
+When the installer is served by a Mesh site, set `MESH_URL` to that site: the hook files come from `<MESH_URL>/install/` and the server defaults to `MESH_URL`. For example `curl -fsSL https://mesh.example.com/install.sh | MESH_URL=https://mesh.example.com MESH_KEY=<key> sh`.
+
 Every config file is backed up once to `<file>.mesh-backup` before the first change. Files that cannot be parsed are left untouched and reported.
 
 ## Per project

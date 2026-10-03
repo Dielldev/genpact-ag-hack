@@ -41,9 +41,17 @@ export function runHook(client, payload, options) {
   return run(HOOK_BIN, ["--client", client], { ...options, stdin: JSON.stringify(payload) });
 }
 
-export async function startStubServer(response = { request_report: true }) {
+export async function startStubServer(response = { request_report: true }, { keys = {}, workspace = "genpact" } = {}) {
   const pings = [];
+  const auth = [];
   const server = createServer((req, res) => {
+    if (req.method === "GET" && req.url === "/api/v1/me") {
+      const key = (req.headers.authorization ?? "").replace(/^Bearer /, "");
+      const person = keys[key];
+      if (Object.keys(keys).length > 0 && !person) return void res.writeHead(401).end("{}");
+      res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(person ? { person, workspace } : { person: null, workspace: null }));
+      return;
+    }
     if (req.method === "GET" && req.url === "/api/v1/health") {
       res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ ok: true }));
       return;
@@ -52,6 +60,7 @@ export async function startStubServer(response = { request_report: true }) {
       let body = "";
       req.on("data", (chunk) => (body += chunk));
       req.on("end", () => {
+        auth.push(req.headers.authorization ?? null);
         pings.push(JSON.parse(body));
         res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(response));
       });
@@ -64,6 +73,7 @@ export async function startStubServer(response = { request_report: true }) {
   return {
     url: `http://127.0.0.1:${port}`,
     pings,
+    auth,
     close: () => new Promise((resolve) => server.close(resolve)),
   };
 }

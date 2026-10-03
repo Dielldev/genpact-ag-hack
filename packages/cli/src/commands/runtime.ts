@@ -23,6 +23,10 @@ export function buildHookCommand(client: Client): string {
   return `"${node}" "${hook}" --client ${client}`;
 }
 
+export function mcpHeadersFor(key: string | undefined): Record<string, string> | undefined {
+  return key ? { Authorization: `Bearer ${key}` } : undefined;
+}
+
 export function mcpUrlFor(serverUrl: string): string {
   return serverUrl + ApiRoute.mcp;
 }

@@ -22,7 +22,7 @@ function install(ctx: InstallContext): string[] {
   const servers = asObject(settings.mcpServers);
   writeJson(settingsPath(), {
     ...settings,
-    mcpServers: { ...servers, [MCP_SERVER_NAME]: { httpUrl: ctx.mcpUrl, trust: true } },
+    mcpServers: { ...servers, [MCP_SERVER_NAME]: { httpUrl: ctx.mcpUrl, trust: true, ...(ctx.mcpHeaders ? { headers: ctx.mcpHeaders } : {}) } },
   });
   return [`${settingsPath()}: AfterAgent hook and trusted MCP server "${MCP_SERVER_NAME}"`];
 }

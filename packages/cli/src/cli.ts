@@ -22,6 +22,7 @@ Options for init
   --server <url>        Mesh server URL (default http://localhost:8787)
   --person <name>       Your name as teammates should see it
   --workspace <id>      Workspace to report into
+  --key <key>           Your personal access key (or set MESH_KEY)
   --clients <list>      Comma-separated: claude-code,codex,cursor,gemini (default: detected)
   -y, --yes             Accept defaults without prompting
 
@@ -39,6 +40,7 @@ async function main(): Promise<number> {
       person: { type: "string" },
       workspace: { type: "string" },
       clients: { type: "string" },
+      key: { type: "string" },
       yes: { type: "boolean", short: "y", default: false },
       purge: { type: "boolean", default: false },
       help: { type: "boolean", short: "h", default: false },
@@ -53,6 +55,7 @@ async function main(): Promise<number> {
         person: values.person,
         workspace: values.workspace,
         clients: values.clients,
+        key: values.key,
         yes: values.yes ?? false,
       });
     case Command.status:

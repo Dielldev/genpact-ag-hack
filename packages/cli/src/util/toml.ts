@@ -9,6 +9,10 @@ export function tomlString(value: string): string {
   return JSON.stringify(value);
 }
 
+export function tomlInlineTable(values: Record<string, string>): string {
+  return `{ ${Object.entries(values).map(([k, v]) => `${tomlString(k)} = ${tomlString(v)}`).join(", ")} }`;
+}
+
 export function hasTomlSection(text: string, section: string): boolean {
   return findSection(splitLines(text), section) !== null;
 }

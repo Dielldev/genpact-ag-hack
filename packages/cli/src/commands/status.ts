@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { CLIENT_ADAPTERS } from "../clients/registry.js";
 import { hookLogPath, installedHookPath } from "../config/paths.js";
 import { loadUserConfig } from "../config/userConfig.js";
-import { checkHealth } from "../hook/server.js";
+import { checkHealth, whoAmI } from "../hook/server.js";
 import { readText } from "../util/jsonFile.js";
 
 const LOG_TAIL_LINES = 5;
@@ -31,6 +31,11 @@ export async function runStatus(): Promise<number> {
 
   const healthy = await checkHealth(config.serverUrl);
   console.log(`\nServer ${healthy ? "reachable" : "not reachable"}`);
+  if (healthy) {
+    const who = await whoAmI(config.serverUrl, config.key);
+    const line = who.kind === "ok" ? `accepted${who.identity.person ? ` as ${who.identity.person}` : ""}` : who.kind === "rejected" ? "REJECTED, run `mesh init --key ...` again" : "could not be checked";
+    console.log(`Key        ${config.key ? line : who.kind === "rejected" ? "missing, this server needs one" : "not used"}`);
+  }
 
   const tail = readText(hookLogPath()).trim().split("\n").filter(Boolean).slice(-LOG_TAIL_LINES);
   if (tail.length > 0) {

@@ -5,6 +5,7 @@ export const HOOK_TIMEOUT_SECONDS = 15;
 export interface InstallContext {
   hookCommand: string;
   mcpUrl: string;
+  mcpHeaders?: Record<string, string>;
 }
 
 export interface ClientInspection {

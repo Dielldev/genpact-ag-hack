@@ -4,15 +4,16 @@ import {
   loadUserConfig,
   normalizeServerUrl,
   saveUserConfig,
+  validateKey,
   validatePerson,
   validateWorkspace,
   type UserConfig,
 } from "../config/userConfig.js";
-import { checkHealth } from "../hook/server.js";
+import { checkHealth, whoAmI } from "../hook/server.js";
 import { parseClient } from "../hook/payload.js";
 import { defaultPersonName } from "../util/identity.js";
 import { ask, confirm, isInteractive } from "../util/prompt.js";
-import { buildHookCommand, installHookRuntime, mcpUrlFor } from "./runtime.js";
+import { buildHookCommand, installHookRuntime, mcpHeadersFor, mcpUrlFor } from "./runtime.js";
 
 export const DEFAULT_SERVER_URL = "http://localhost:8787";
 const DEFAULT_WORKSPACE = "default";
@@ -22,6 +23,7 @@ export interface InitOptions {
   person?: string;
   workspace?: string;
   clients?: string;
+  key?: string;
   yes: boolean;
 }
 
@@ -41,7 +43,7 @@ export async function runInit(options: InitOptions): Promise<number> {
   let failures = 0;
   for (const adapter of adapters) {
     try {
-      const changes = adapter.install({ hookCommand: buildHookCommand(adapter.client), mcpUrl: mcpUrlFor(config.serverUrl) });
+      const changes = adapter.install({ hookCommand: buildHookCommand(adapter.client), mcpUrl: mcpUrlFor(config.serverUrl), mcpHeaders: mcpHeadersFor(config.key) });
       console.log(`\n✓ ${adapter.label}`);
       for (const change of changes) console.log(`  ${change}`);
     } catch (error) {
@@ -68,11 +70,24 @@ async function resolveConfig(options: InitOptions, interactive: boolean): Promis
   const serverUrl = normalizeServerUrl(
     await pick(options.server, "Mesh server URL", existing?.serverUrl ?? DEFAULT_SERVER_URL),
   );
-  const person = validatePerson(await pick(options.person, "Your name", existing?.person ?? defaultPersonName()));
+  const givenKey = options.key || process.env.MESH_KEY || existing?.key;
+  const key = givenKey ? validateKey(givenKey) : undefined;
+
+  const who = await whoAmI(serverUrl, key);
+  if (who.kind === "rejected") {
+    throw new Error(
+      key
+        ? "The server rejected that key. Check it with whoever set up Mesh and run again."
+        : "This server needs a personal key. Get yours from whoever set up Mesh and run again with --key.",
+    );
+  }
+  const known = who.kind === "ok" ? who.identity : { person: null, workspace: null };
+
+  const person = validatePerson(known.person ?? (await pick(options.person, "Your name", existing?.person ?? defaultPersonName())));
   const workspace = validateWorkspace(
-    await pick(options.workspace, "Workspace", existing?.workspace ?? DEFAULT_WORKSPACE),
+    known.workspace ?? (await pick(options.workspace, "Workspace", existing?.workspace ?? DEFAULT_WORKSPACE)),
   );
-  return { serverUrl, person, workspace };
+  return { serverUrl, person, workspace, ...(key ? { key } : {}) };
 }
 
 async function chooseAdapters(clients: string | undefined, interactive: boolean): Promise<ClientAdapter[]> {
