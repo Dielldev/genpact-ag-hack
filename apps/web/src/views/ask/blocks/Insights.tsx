@@ -1,31 +1,7 @@
-import type { BarsBlock, InsightsBlock, IssuesBlock, TimelineBlock } from "@mesh/server/api";
-import { Avatar } from "../../../components/bits";
-import { day, firstName } from "../../../format";
+import type { BarsBlock, InsightsBlock, TimelineBlock } from "@mesh/server/api";
+import { day } from "../../../format";
 import { Block, None } from "./Block";
 import { ReasonRow } from "./Reason";
-
-export function IssuesView({ block }: { block: IssuesBlock }) {
-  return (
-    <Block title={block.title} count={block.rows.length}>
-      {block.rows.length === 0 ? <None>No blockers, collisions or rediscoveries in this period.</None> : (
-        <ul className="rep-rows">
-          {block.rows.map((r, i) => (
-            <li key={`${r.kind}-${i}`} className="rep-issue rep-issue-static">
-              {r.kind === "blocker" ? <span className="rep-times">{r.count}×</span> : <span className={`rep-chip rep-chip-${r.kind}`}>{r.kind}</span>}
-              <span className="rep-issue-main">
-                <span className="rep-issue-text rep-clamp">{r.text}</span>
-                <span className="rep-issue-who">
-                  {r.people.slice(0, 4).map((p) => <Avatar key={p} name={p} size={16} />)}
-                  <span>{r.people.map(firstName).join(", ")}</span>
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Block>
-  );
-}
 
 export function BarsView({ block }: { block: BarsBlock }) {
   const max = Math.max(1, ...block.rows.map((r) => r.value));

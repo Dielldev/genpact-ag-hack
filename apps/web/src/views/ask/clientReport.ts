@@ -1,7 +1,7 @@
 import { WarningKind } from "@mesh/contract";
 import type { AnswerBlock, AskResponse, EventRecord, FeedItem, PersonSummary, SessionRow } from "@mesh/server/api";
 import { minutesSince, toneOf } from "../../format";
-import { periodOf, ReportKind, type ReportSpec } from "./intent";
+import { PeriodId, ReportKind, type ReportSpec } from "./intent";
 import type { Kpi, ReportData, Row } from "./model";
 import { openIdOf } from "./model";
 import { isTrouble } from "./stats";
@@ -29,13 +29,20 @@ export function pickSessions(rows: Row[]): string[] {
   return [...rows].sort((a, b) => relevance(b) - relevance(a)).slice(0, MAX_SESSIONS).map((r) => openIdOf(r.item));
 }
 
-function kpiBlock(kpis: Kpi[], previous: string): AnswerBlock {
+const PREVIOUS_WORD: Record<PeriodId, string> = {
+  [PeriodId.today]: "yesterday",
+  [PeriodId.week]: "last week",
+  [PeriodId.twoWeeks]: "the 2 weeks before",
+  [PeriodId.month]: "the 30 days before",
+};
+
+function kpiBlock(kpis: Kpi[], period: PeriodId): AnswerBlock {
   const tones: Record<string, SessionRow["status"]> = { done: "done", progress: "progress", blocked: "blocked" };
   return {
     type: "kpis",
     items: kpis.map((k) => {
-      const diff = k.prev === null ? null : k.value - k.prev;
-      const delta = diff === null ? undefined : diff === 0 ? `no change vs ${previous}` : `${diff > 0 ? "↑" : "↓"} ${Math.abs(diff)} vs ${previous}`;
+      const diff = k.prev === null || (k.id !== "sessions" && k.id !== "done") ? 0 : k.value - (k.prev ?? 0);
+      const delta = diff === 0 ? undefined : `${diff > 0 ? "up" : "down"} ${Math.abs(diff)} on ${PREVIOUS_WORD[period]}`;
       const of = k.of ? `of ${k.of} on the team` : undefined;
       return { label: k.label, value: k.value, hint: delta ?? of, tone: tones[k.id] };
     }),
@@ -118,8 +125,7 @@ function section(id: SectionId, d: ReportData, events: EventRecord[]): AnswerBlo
 }
 
 export function reportBlocks(d: ReportData, events: EventRecord[]): AnswerBlock[] {
-  const previous = `previous ${periodOf(d.spec.period).long.replace(/^Last /, "")}`;
-  return [kpiBlock(d.kpis, previous), ...LAYOUT[d.spec.kind].flatMap((id) => section(id, d, events))];
+  return [kpiBlock(d.kpis, d.spec.period), ...LAYOUT[d.spec.kind].flatMap((id) => section(id, d, events))];
 }
 
 export function reportResponse(d: ReportData, events: EventRecord[], started: number, spec: ReportSpec): AskResponse {

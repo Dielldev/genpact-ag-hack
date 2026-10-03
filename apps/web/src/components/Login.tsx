@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { ApiError, api, clearKey, setKey } from "../api";
-import { Logo } from "./shell/Sidebar";
 
 export function Login() {
   const [value, setValue] = useState("");
@@ -27,7 +26,6 @@ export function Login() {
   return (
     <div className="gate">
       <form className="login-card" onSubmit={submit} aria-label="Sign in">
-        <Logo />
         <h1>Welcome to Mesh</h1>
         <p className="muted">Enter the access key your team gave you</p>
         <input

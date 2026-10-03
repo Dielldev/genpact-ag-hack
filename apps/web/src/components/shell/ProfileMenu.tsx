@@ -15,14 +15,14 @@ export function ProfileMenuBody({ profile, close }: { profile: ProfileInfo; clos
     <>
       <div className="menu-head">{person ?? "PM seat"}</div>
       <div className="menu-item" role="presentation">
-        {online || demo ? <Wifi size={16} color="#1fa97a" /> : <WifiOff size={16} color="#e5484d" />}
+        {online || demo ? <Wifi size={16} color="#21708a" /> : <WifiOff size={16} color="#e5484d" />}
         <span className="menu-item-text">
           <strong>{demo ? "Demo data" : online ? "Connected" : "Offline"}</strong>
           <span>{demo ? "Offline sample data, no live server" : online ? "Live from the Mesh server" : "Retrying every few seconds"}</span>
         </span>
       </div>
       <div className="menu-item" role="presentation">
-        <Lock size={16} color="#6c3ff0" />
+        <Lock size={16} />
         <span className="menu-item-text">
           <strong>Shared reports only</strong>
           <span>Private sessions are never shown</span>

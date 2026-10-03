@@ -1,8 +1,6 @@
 import type { AnswerBlock } from "@mesh/server/api";
 import type { ReactNode } from "react";
-import { BarsView, InsightsView, IssuesView, TimelineView } from "./Insights";
-import { KpisView, StatusView } from "./Overview";
-import { BlockersView, LeaderboardView, PersonView } from "./People";
+import { BarsView, InsightsView, TimelineView } from "./Insights";
 import { SessionsView } from "./SessionRow";
 
 interface Props {
@@ -13,20 +11,15 @@ interface Props {
 
 export function BlockView({ block, now, onOpen }: Props): ReactNode {
   switch (block.type) {
-    case "kpis": return <KpisView block={block} />;
-    case "status": return <StatusView block={block} />;
-    case "leaderboard": return <LeaderboardView block={block} onOpen={onOpen} />;
-    case "blockers": return <BlockersView block={block} onOpen={onOpen} />;
-    case "issues": return <IssuesView block={block} />;
     case "bars": return <BarsView block={block} />;
     case "timeline": return <TimelineView block={block} />;
     case "sessions": return <SessionsView block={block} now={now} onOpen={onOpen} />;
     case "insights": return <InsightsView block={block} onOpen={onOpen} />;
-    case "person": return <PersonView block={block} now={now} onOpen={onOpen} />;
+    default: return null;
   }
 }
 
-const PAIRABLE = new Set<AnswerBlock["type"]>(["leaderboard", "blockers", "bars", "timeline"]);
+const PAIRABLE = new Set<AnswerBlock["type"]>(["bars", "timeline"]);
 
 export function BlockList({ blocks, now, onOpen }: { blocks: AnswerBlock[]; now: number; onOpen: (id: string) => void }) {
   const rows: AnswerBlock[][] = [];

@@ -2,7 +2,6 @@ import type { Project } from "@mesh/server/api";
 import { ChevronDown, ChevronLeft, Lock, Plus } from "lucide-react";
 import { Avatar } from "../bits";
 import { Menu } from "../Menu";
-import { hueOf } from "../../format";
 import { VIEWS } from "../../nav";
 import { ProfileMenuBody, type ProfileInfo } from "./ProfileMenu";
 
@@ -24,19 +23,6 @@ interface Props {
 
 const SHOWN = 5;
 
-export function Logo() {
-  return (
-    <span className="brand-mark" aria-hidden>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round">
-        <path d="M4.5 13.5 9 4.5l4.5 9M4.5 13.5h9" />
-        <circle cx="9" cy="4.5" r="2" fill="#fff" />
-        <circle cx="4.5" cy="13.5" r="2" fill="#fff" />
-        <circle cx="13.5" cy="13.5" r="2" fill="#fff" />
-      </svg>
-    </span>
-  );
-}
-
 export function Sidebar({ view, go, collapsed, toggle, modules, activeModule, onModule, projects, activeProject, onProject, onNewProject, onMore, profile }: Props) {
   const name = profile.person ?? "PM seat";
   return (
@@ -45,7 +31,6 @@ export function Sidebar({ view, go, collapsed, toggle, modules, activeModule, on
         <ChevronLeft size={15} />
       </button>
       <div className="brand">
-        <Logo />
         <span className="brand-text">Mesh</span>
       </div>
       <div className="side-label">Menu</div>
@@ -66,7 +51,7 @@ export function Sidebar({ view, go, collapsed, toggle, modules, activeModule, on
         {projects.length === 0 && <p className="side-hint">No projects yet</p>}
         {projects.slice(0, SHOWN).map((p) => (
           <button key={p.project_id} type="button" className={`nav-item${p.title === activeProject ? " nav-active" : ""}`} onClick={() => onProject(p.title === activeProject ? "" : p.title)} title={p.title}>
-            <span className="ring" style={{ ["--hue" as string]: `hsl(${hueOf(p.title)} 70% 58%)` }} />
+            <span className="ring" />
             <span className="nav-text">{p.title}</span>
           </button>
         ))}
@@ -81,7 +66,7 @@ export function Sidebar({ view, go, collapsed, toggle, modules, activeModule, on
           <div className="side-label side-label-gap">Modules</div>
           {modules.slice(0, SHOWN).map((m) => (
             <button key={m} type="button" className={`nav-item${m === activeModule ? " nav-active" : ""}`} onClick={() => onModule(m === activeModule ? "" : m)} title={m}>
-              <span className="ring" style={{ ["--hue" as string]: `hsl(${hueOf(m)} 70% 58%)` }} />
+              <span className="ring" />
               <span className="nav-text">{m}</span>
             </button>
           ))}

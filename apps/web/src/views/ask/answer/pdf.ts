@@ -5,12 +5,19 @@ const slug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").re
 
 export async function downloadReportPdf(node: HTMLElement, title: string, workspace: string): Promise<void> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-  const canvas = await html2canvas(node, {
-    scale: 2,
-    backgroundColor: "#ffffff",
-    useCORS: true,
-    ignoreElements: (el) => el.hasAttribute("data-pdf-hide"),
-  });
+  node.classList.add("is-capturing");
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(node, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      ignoreElements: (el) => el.hasAttribute("data-pdf-hide"),
+    });
+  } finally {
+    node.classList.remove("is-capturing");
+  }
   const pdf = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
@@ -28,13 +35,13 @@ export async function downloadReportPdf(node: HTMLElement, title: string, worksp
     slice.height = h;
     slice.getContext("2d")?.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
     if (page > 0) pdf.addPage();
-    pdf.setTextColor(27, 26, 46);
+    pdf.setTextColor(28, 32, 38);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(13);
     pdf.text(pdf.splitTextToSize(title, imgW - 80)[0] ?? "Mesh report", MARGIN, MARGIN + 12);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(8.5);
-    pdf.setTextColor(120, 118, 140);
+    pdf.setTextColor(120, 128, 138);
     pdf.text(`Mesh · ${workspace} · ${stamp}`, MARGIN, MARGIN + 26);
     pdf.text(`${page + 1} / ${pages}`, pageW - MARGIN, MARGIN + 12, { align: "right" });
     pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", MARGIN, MARGIN + HEADER, imgW, h / scale);

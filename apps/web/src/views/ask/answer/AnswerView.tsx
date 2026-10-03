@@ -1,7 +1,12 @@
 import type { AskResponse } from "@mesh/server/api";
 import { Info, SearchX } from "lucide-react";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { BlockList } from "../blocks/BlockView";
+import { AttentionCard } from "../cards/Attention";
+import { compose } from "../cards/compose";
+import { GlanceCard } from "../cards/Glance";
+import { More, summaryOf } from "../cards/More";
+import { WhoDidWhatCard } from "../cards/WhoDidWhat";
 import { Evidence } from "./Evidence";
 import { RichText } from "./richText";
 import { Steps } from "./Steps";
@@ -17,6 +22,7 @@ interface Props {
 export function AnswerView({ question, workspace, answer, now, onOpen }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const blocks = answer.blocks ?? [];
+  const composed = useMemo(() => compose(blocks), [blocks]);
   if (answer.no_record && blocks.length === 0) {
     return (
       <div className="ask-norecord">
@@ -29,6 +35,8 @@ export function AnswerView({ question, workspace, answer, now, onOpen }: Props) 
       </div>
     );
   }
+  const hasEvidence = answer.sources.length > 0 || answer.knowledge.length > 0;
+  const hasMore = composed.rest.length > 0 || (blocks.length > 0 && hasEvidence);
   return (
     <div className="ask-answer" ref={root}>
       {answer.degraded && (
@@ -39,8 +47,16 @@ export function AnswerView({ question, workspace, answer, now, onOpen }: Props) 
       )}
       {answer.answer.trim() && !(answer.no_record && blocks.length > 0) && <RichText text={answer.answer} sources={answer.sources} onOpen={onOpen} />}
       <Steps question={question} answer={answer} target={root} workspace={workspace} />
-      {blocks.length > 0 && <BlockList blocks={blocks} now={now} onOpen={onOpen} />}
-      <Evidence answer={answer} now={now} onOpen={onOpen} compact={blocks.length > 0} />
+      {composed.glance && <GlanceCard glance={composed.glance} />}
+      {composed.attention && <AttentionCard rows={composed.attention} onOpen={onOpen} />}
+      {composed.people && <WhoDidWhatCard rows={composed.people} onOpen={onOpen} />}
+      {hasMore && (
+        <More summary={summaryOf(composed.rest.map((b) => b.type), hasEvidence)}>
+          <BlockList blocks={composed.rest} now={now} onOpen={onOpen} />
+          <Evidence answer={answer} now={now} onOpen={onOpen} compact />
+        </More>
+      )}
+      {blocks.length === 0 && <Evidence answer={answer} now={now} onOpen={onOpen} />}
     </div>
   );
 }

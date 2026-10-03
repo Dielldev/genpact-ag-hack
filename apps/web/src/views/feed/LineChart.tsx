@@ -20,8 +20,8 @@ export function LineChart({ data, unit }: { data: Series; unit: string }) {
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
           <defs>
             <linearGradient id="warn-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#e5365a" stopOpacity="0.22" />
-              <stop offset="1" stopColor="#e5365a" stopOpacity="0" />
+              <stop offset="0" stopColor="#5aaec7" stopOpacity="0.2" />
+              <stop offset="1" stopColor="#5aaec7" stopOpacity="0" />
             </linearGradient>
           </defs>
           <line className="grid-line" x1="0" x2={W} y1={H - 1} y2={H - 1} />

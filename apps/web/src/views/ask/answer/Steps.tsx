@@ -29,23 +29,21 @@ export function Steps({ question, answer, target, workspace }: Props) {
   };
 
   return (
-    <div className="ask-steps">
-      <div className="ask-steps-bar" data-pdf-hide>
+    <div className="ask-quiet" data-pdf-hide>
+      <div className="ask-quiet-line">
         {steps.length > 0 || answer.elapsed_ms ? (
-          <button type="button" className="ask-steps-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)} disabled={steps.length === 0}>
-            <ChevronRight size={13} className={open ? "is-open" : undefined} />
+          <button type="button" className="ask-link" aria-expanded={open} onClick={() => setOpen((v) => !v)} disabled={steps.length === 0}>
+            {steps.length > 0 && <ChevronRight size={12} className={open ? "is-open" : undefined} />}
             {steps.length > 0 ? `Worked through ${steps.length} ${steps.length === 1 ? "step" : "steps"}` : "Answered"}
-            {answer.elapsed_ms ? <span className="faint"> · {seconds(answer.elapsed_ms)}</span> : null}
+            {answer.elapsed_ms ? ` · ${seconds(answer.elapsed_ms)}` : ""}
           </button>
-        ) : <span />}
-        <span className="ask-steps-right">
-          {answer.model && <span className="rep-chip rep-chip-mono" title="Model">{answer.model}</span>}
-          <PdfButton target={target} title={question} workspace={workspace} />
-          <button type="button" className="btn btn-ghost ask-copy" onClick={copy}>
-            {copied ? <Check size={13} /> : <Copy size={13} />}
-            <span>{copied ? "Copied" : "Copy as Markdown"}</span>
-          </button>
-        </span>
+        ) : null}
+        {answer.model && <span className="ask-model" title="Model">{answer.model}</span>}
+        <PdfButton target={target} title={question} workspace={workspace} />
+        <button type="button" className="ask-link" onClick={copy}>
+          {copied ? <Check size={12} /> : <Copy size={12} />}
+          {copied ? "Copied" : "Copy as Markdown"}
+        </button>
       </div>
       {open && (
         <ol className="ask-steps-list">
@@ -53,7 +51,7 @@ export function Steps({ question, answer, target, workspace }: Props) {
             <li key={i}>
               <span className="ask-step-n">{i + 1}</span>
               <span className="ask-step-label">{s.label}</span>
-              {s.tool && <span className="rep-chip rep-chip-mono">{s.tool}</span>}
+              {s.tool && <span className="ask-model">{s.tool}</span>}
               <span className="ask-step-ms">{s.ms < 1000 ? `${Math.round(s.ms)}ms` : seconds(s.ms)}</span>
             </li>
           ))}

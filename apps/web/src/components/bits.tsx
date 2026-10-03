@@ -1,7 +1,7 @@
 import type { ArtifactRef, ReportStatus } from "@mesh/contract";
 import { FileText, FolderOpen, Handshake, Building2, LineChart, Shapes, Inbox, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { firstName, hueOf, initials, STATUS_LABEL, statusLine, toneOf } from "../format";
+import { firstName, initials, STATUS_LABEL, statusLine, toneOf } from "../format";
 import { StatusIcon } from "./StatusIcon";
 
 export function StatusChip({ status, since, lastSeen, now }: { status: ReportStatus | null; since: string | null; lastSeen: string; now: number }) {
@@ -50,9 +50,8 @@ export function ModuleChips({ modules, onPick }: { modules: string[]; onPick?: (
 }
 
 export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
-  const h = hueOf(name);
   return (
-    <span className="avatar" title={firstName(name)} style={{ ["--s" as string]: `${size}px`, background: `linear-gradient(135deg, hsl(${h} 70% 62%), hsl(${(h + 35) % 360} 68% 50%))` }} aria-hidden>
+    <span className="avatar" title={firstName(name)} style={{ ["--s" as string]: `${size}px` }} aria-hidden>
       {initials(name)}
     </span>
   );

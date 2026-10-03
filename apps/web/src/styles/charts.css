@@ -2,20 +2,20 @@
 .bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; height: 124px; }
 .bar-col { display: flex; flex-direction: column; align-items: center; min-width: 0; cursor: pointer; }
 .bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
-.bar-rect { position: relative; width: 100%; max-width: 16px; background: #eeeafb; border-radius: 6px 6px 3px 3px; transition: background 0.18s, height 0.35s; }
-.bar-col:hover .bar-rect { background: #d9cffa; }
+.bar-rect { position: relative; width: 100%; max-width: 16px; background: var(--surface-3); border-radius: 6px 6px 3px 3px; transition: background 0.18s, height 0.35s; }
+.bar-col:hover .bar-rect { background: var(--brand-100); }
 .bar-col-on .bar-rect, .bar-col-on:hover .bar-rect { background: var(--brand); }
 .axis-label { font-size: 9px; color: var(--ink-3); margin-top: 8px; white-space: nowrap; line-height: 1; }
-.bar-tip, .line-tip { position: absolute; transform: translate(-50%, -100%); background: #1f1b3a; color: #fff; font-size: 11px; font-weight: 500; padding: 6px 10px; border-radius: 9px; white-space: nowrap; pointer-events: none; box-shadow: 0 10px 24px -8px rgba(31, 27, 58, 0.55); z-index: 2; }
+.bar-tip, .line-tip { position: absolute; transform: translate(-50%, -100%); background: #1b2428; color: #fff; font-size: 11px; font-weight: 500; padding: 6px 10px; border-radius: 9px; white-space: nowrap; pointer-events: none;  z-index: 2; }
 .bar-tip { left: 50%; top: -10px; }
-.bar-tip::after, .line-tip::after { content: ""; position: absolute; left: 50%; bottom: -3px; width: 8px; height: 8px; background: #1f1b3a; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
+.bar-tip::after, .line-tip::after { content: ""; position: absolute; left: 50%; bottom: -3px; width: 8px; height: 8px; background: #1b2428; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
 .line-tip { transition: left 0.18s, top 0.18s; }
-.line-tip small { display: block; color: #b8b3d8; font-size: 10px; font-weight: 400; }
+.line-tip small { display: block; color: #aebcc3; font-size: 10px; font-weight: 400; }
 .line-wrap { position: relative; height: 104px; }
 .line-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.line-path { fill: none; stroke: var(--crimson); stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.line-path { fill: none; stroke: var(--st-progress); stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .grid-line { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
-.line-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; border: 2px solid var(--crimson); box-shadow: 0 0 0 4px rgba(229, 54, 90, 0.15); pointer-events: none; transition: left 0.18s, top 0.18s; }
+.line-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; border: 2px solid var(--st-progress); box-shadow: 0 0 0 4px rgba(229, 54, 90, 0.15); pointer-events: none; transition: left 0.18s, top 0.18s; }
 .line-hits { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); }
 .line-hits div { cursor: pointer; }
 .line-axis { display: grid; grid-template-columns: repeat(12, 1fr); margin-top: 8px; }
