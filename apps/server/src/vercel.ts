@@ -1,5 +1,6 @@
 import { getRequestListener } from "@hono/node-server";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { loadConfig, type Config } from "./config.js";
 import { createApp } from "./http/app.js";
 import { buildDeps } from "./server.js";
 
@@ -7,7 +8,14 @@ type Listener = (req: IncomingMessage, res: ServerResponse) => unknown;
 
 let booting: Promise<Listener> | undefined;
 
+export function assertProtected(config: Pick<Config, "members">, allowOpen: string | undefined): void {
+  if (config.members.length === 0 && allowOpen !== "1") {
+    throw new Error("MESH_MEMBERS is not set, so this deployment would be open to everyone. Set it, or set MESH_ALLOW_OPEN=1 to allow that.");
+  }
+}
+
 async function boot(): Promise<Listener> {
+  assertProtected(loadConfig(), process.env.MESH_ALLOW_OPEN);
   const deps = await buildDeps();
   return getRequestListener(createApp(deps).fetch) as Listener;
 }

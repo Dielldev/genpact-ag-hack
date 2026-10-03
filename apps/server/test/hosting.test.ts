@@ -4,7 +4,7 @@ import { loadConfig, parseMembers, type Config } from "../src/config.js";
 import type { AppDeps } from "../src/deps.js";
 import { HttpError } from "../src/http/errors.js";
 import { authorize, identityOf, memberFor, tokenOf, withIdentity } from "../src/http/auth.js";
-import { restoreUrl } from "../src/vercel.js";
+import { assertProtected, restoreUrl } from "../src/vercel.js";
 import { ANA, BO, WORKSPACE } from "./harness.js";
 
 const depsWith = (config: Partial<Config>) => ({ config: { members: [], workspace: undefined, ...config } }) as unknown as AppDeps;
@@ -166,5 +166,14 @@ describe("parseMembers duplicates", () => {
     assert.throws(() => parseMembers(`Ana:${a},ana:${b}`), /repeat/);
     assert.throws(() => parseMembers(`Ana:${a},Bo:${a}`), /repeat/);
     assert.equal(parseMembers(`Ana:${a},Bo:${b}`).length, 2);
+  });
+});
+
+describe("hosted server without keys", () => {
+  it("refuses to start open unless explicitly allowed", () => {
+    assert.throws(() => assertProtected({ members: [] }, undefined), /MESH_MEMBERS is not set/);
+    assert.throws(() => assertProtected({ members: [] }, "0"), /MESH_MEMBERS is not set/);
+    assert.doesNotThrow(() => assertProtected({ members: [] }, "1"));
+    assert.doesNotThrow(() => assertProtected({ members: [{ name: "Ana", key: "a".repeat(20) }] }, undefined));
   });
 });
