@@ -1,114 +1,120 @@
-import { useEffect, useRef, useState } from "react";
-import { ReportStatus } from "@mesh/contract";
-import type { FeedItem, WarningCard } from "@mesh/server/api";
-import { api } from "../api";
-import { ArtifactChips, Avatar, Empty, ErrorState, Loading, ModuleChips, StatusChip } from "../components/bits";
-import { WarningItem } from "../components/WarningItem";
-import { minutesSince, STUCK_AFTER_MINUTES, toneOf } from "../format";
-import { useLoad, useNow } from "../hooks";
+import { useMemo, useState } from "react";
+import { Radio } from "lucide-react";
+import type { Dashboard } from "../dashboard";
+import { Empty, ErrorState, Loading } from "../components/bits";
+import { FilterChip } from "../components/FilterChip";
+import { minutesSince } from "../format";
+import { useNow } from "../hooks";
+import { useShortcuts } from "../shortcuts";
+import { BarChart } from "./feed/BarChart";
+import { ChartCard } from "./feed/ChartCard";
+import { groupItems, passes, toneFor, type TileId } from "./feed/filters";
+import { Hero } from "./feed/Hero";
+import { LineChart } from "./feed/LineChart";
+import { pairKey, type Signal } from "./feed/MeshGraph";
+import { PERIODS, series, trend } from "./feed/series";
+import { SessionList } from "./feed/SessionList";
+import { Tiles } from "./feed/Tiles";
+import { useChanged } from "./feed/useChanged";
+import type { Tone } from "../format";
 
-const POLL_MS = 4000;
-
-function useChanged(items: FeedItem[] | undefined): Set<string> {
-  const seen = useRef(new Map<string, string>());
-  const [changed, setChanged] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    if (!items) return;
-    const fresh = new Set<string>();
-    for (const item of items) {
-      const stamp = `${item.last_seen_at}|${item.report_count}|${item.status}`;
-      const before = seen.current.get(item.key);
-      if (before !== undefined && before !== stamp) fresh.add(item.key);
-      seen.current.set(item.key, stamp);
-    }
-    if (fresh.size === 0) return;
-    setChanged(fresh);
-    const timer = setTimeout(() => setChanged(new Set()), 2500);
-    return () => clearTimeout(timer);
-  }, [items]);
-  return changed;
+interface Props {
+  workspace: string;
+  data: Dashboard;
+  person: string;
+  module: string;
+  onPerson: (p: string) => void;
+  onModule: (m: string) => void;
+  onOpen: (id: string) => void;
 }
 
-function Card({ item, now, warnings, changed, onOpen, onModule }: { item: FeedItem; now: number; warnings: WarningCard[]; changed: boolean; onOpen: (id: string) => void; onModule: (m: string) => void }) {
-  const tone = toneOf(item.status, item.status_since, now);
-  const open = () => onOpen(item.event_id ?? String(item.session_pk));
-  return (
-    <article className={`card card-${tone}${changed ? " card-changed" : ""}`}>
-      <button type="button" className="card-main" onClick={open}>
-        <div className="card-top">
-          <Avatar name={item.person} />
-          <div className="card-who">
-            <strong>{item.person}</strong>
-            <span className="muted">
-              {item.project ?? "no project"}
-              {item.ticket_ref && <span className="ticket"> · {item.ticket_ref}</span>}
-            </span>
-          </div>
-          <StatusChip status={item.status} since={item.status_since} lastSeen={item.last_seen_at} now={now} />
-        </div>
-        <h3 className="card-task">{item.task ?? "Working, no report filed yet"}</h3>
-        {item.summary && <p className="card-summary">{item.summary}</p>}
-        {item.blockers.length > 0 && (
-          <ul className="blockers">{item.blockers.map((b) => <li key={b}>{b}</li>)}</ul>
-        )}
-      </button>
-      <ModuleChips modules={item.modules} onPick={onModule} />
-      <ArtifactChips artifacts={item.artifacts} />
-      {warnings.map((w) => <WarningItem key={w.warning_id} warning={w} now={now} onOpen={onOpen} compact />)}
-    </article>
-  );
-}
+const TILE_IDS: TileId[] = ["all", "progress", "blocked", "stuck", "done", "collisions"];
 
-export function Feed({ workspace, onOpen }: { workspace: string; onOpen: (id: string) => void }) {
+export function Feed({ workspace, data, person, module, onPerson, onModule, onOpen }: Props) {
   const now = useNow(5000);
-  const [person, setPerson] = useState("");
-  const [status, setStatus] = useState("");
-  const [module, setModule] = useState("");
-  const feed = useLoad(() => api.feed(workspace, { person, status, module }), [workspace, person, status, module], POLL_MS);
-  const warnings = useLoad(() => api.warnings(workspace), [workspace], POLL_MS);
-  const vocab = useLoad(() => api.modules(workspace), [workspace], 30_000);
-  const items = feed.data?.items;
-  const changed = useChanged(items);
-  const all = items ?? [];
-  const blocked = all.filter((i) => i.status === ReportStatus.blocked);
-  const stuck = blocked.filter((i) => minutesSince(i.status_since, now) > STUCK_AFTER_MINUTES);
-  const recent = (warnings.data?.warnings ?? []).filter((w) => w.kind === "collision" && minutesSince(w.created_at, now) < 24 * 60);
-  const warningsFor = (item: FeedItem) => (warnings.data?.warnings ?? []).filter((w) => w.reporter.session_pk === item.session_pk || w.sources.some((s) => s.session_pk === item.session_pk)).slice(0, 2);
+  const [tile, setTile] = useState<TileId>("all");
+  const [period, setPeriod] = useState(PERIODS[1]!);
+  const [closed, setClosed] = useState<Set<Tone>>(new Set(["done"]));
+  const [cursor, setCursor] = useState(0);
+  const [scrollKey, setScrollKey] = useState(0);
+  const all = data.feed.data?.items;
+  const warnings = data.warnings.data?.warnings ?? [];
+  const people = data.people.data?.people ?? [];
+  const changed = useChanged(all);
+
+  const scoped = useMemo(() => (all ?? []).filter((i) => (!person || i.person === person) && (!module || i.modules.includes(module))), [all, person, module]);
+  const counts = Object.fromEntries(TILE_IDS.map((t) => [t, scoped.filter((i) => passes(t, i, now, warnings)).length])) as Record<TileId, number>;
+  const visible = scoped.filter((i) => passes(tile, i, now, warnings));
+  const groups = groupItems(visible, now);
+  const shown = groups.filter((g) => !closed.has(g.tone)).flatMap((g) => g.items);
+
+  const signals: Record<string, Signal> = {};
+  for (const i of all ?? []) {
+    const tone = toneFor(i, now);
+    const next: Signal | undefined = tone === "stuck" ? "stuck" : tone === "blocked" ? "blocked" : tone === "done" ? undefined : "open";
+    const have = signals[i.person];
+    if (next && (!have || (have === "open" && next !== "open") || (have === "blocked" && next === "stuck"))) signals[i.person] = next;
+  }
+  const clashes = new Set<string>();
+  for (const w of warnings) if (w.kind === "collision") for (const s of w.sources) clashes.add(pairKey(w.reporter.person, s.person));
+
+  const started = series(scoped.map((i) => i.first_seen_at), now, period);
+  const scopedWarnings = warnings.filter((w) => !person || w.people.includes(person));
+  const raised = series(scopedWarnings.map((w) => w.created_at), now, period);
+  const collisionsInPeriod = scopedWarnings.filter((w) => w.kind === "collision" && minutesSince(w.created_at, now) * 60_000 <= period.ms).length;
+  const inPeriod = raised.counts.reduce((a, b) => a + b, 0);
+  const raisedTrend = collisionsInPeriod > 0 ? { text: `${collisionsInPeriod} collision${collisionsInPeriod === 1 ? "" : "s"}`, dir: "down" as const } : { text: "All clear", dir: "up" as const };
+
+  const toggle = (tone: Tone) => setClosed((c) => { const n = new Set(c); n.has(tone) ? n.delete(tone) : n.add(tone); return n; });
+  const openAt = (i: number) => { const it = shown[i]; if (it) onOpen(it.event_id ?? String(it.session_pk)); };
+  const pickTile = (t: TileId) => { setTile(t); setCursor(0); if (t === "done") setClosed((c) => { const n = new Set(c); n.delete("done"); return n; }); };
+
+  useShortcuts([
+    { keys: "j", run: () => { setCursor((c) => Math.min(shown.length - 1, c + 1)); setScrollKey((k) => k + 1); } },
+    { keys: "k", run: () => { setCursor((c) => Math.max(0, c - 1)); setScrollKey((k) => k + 1); } },
+    { keys: "enter", run: () => openAt(cursor) },
+  ]);
+
+  if (data.feed.loading && !all) return <Loading label="Loading the live feed" />;
+  if (data.feed.error && !all) return <ErrorState message={data.feed.error} onRetry={data.feed.reload} />;
 
   return (
-    <div className="view">
-      <div className="attention">
-        <div className={`stat ${blocked.length ? "stat-amber" : ""}`}><span>{blocked.length}</span>blocked sessions</div>
-        <div className={`stat ${stuck.length ? "stat-red" : ""}`}><span>{stuck.length}</span>stuck over {STUCK_AFTER_MINUTES} min</div>
-        <div className={`stat ${recent.length ? "stat-magenta" : ""}`}><span>{recent.length}</span>collisions in 24h</div>
-        <div className="stat"><span>{all.filter((i) => i.status !== ReportStatus.done).length}</span>active now</div>
+    <div>
+      <Tiles active={tile} counts={counts} onPick={pickTile} />
+      <Hero
+        workspace={workspace}
+        people={people}
+        person={person}
+        onPerson={onPerson}
+        totals={{ sessions: scoped.length, open: scoped.filter((i) => toneFor(i, now) !== "done").length, modules: new Set(scoped.flatMap((i) => i.modules)).size }}
+        signals={signals}
+        clashes={clashes}
+        now={now}
+      />
+      <div className="cards2">
+        <ChartCard title="Sessions" period={period} onPeriod={setPeriod} big={String(started.counts.reduce((a, b) => a + b, 0))} trend={trend(started.counts)}>
+          <BarChart data={started} unit="session" />
+        </ChartCard>
+        <ChartCard title="Warnings" period={period} onPeriod={setPeriod} big={String(inPeriod)} trend={raisedTrend}>
+          <LineChart data={raised} unit="warning" />
+        </ChartCard>
       </div>
-      <div className="filters">
-        <select value={person} onChange={(e) => setPerson(e.target.value)} aria-label="Person">
-          <option value="">Everyone</option>
-          {(vocab.data?.people ?? []).map((p) => <option key={p}>{p}</option>)}
-        </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
-          <option value="">Any status</option>
-          <option value={ReportStatus.inProgress}>In progress</option>
-          <option value={ReportStatus.blocked}>Blocked</option>
-          <option value={ReportStatus.done}>Done</option>
-          <option value="active">Active, no report</option>
-        </select>
-        <select value={module} onChange={(e) => setModule(e.target.value)} aria-label="Module">
-          <option value="">All modules</option>
-          {(vocab.data?.modules ?? []).map((m) => <option key={m}>{m}</option>)}
-        </select>
-        {(person || status || module) && <button type="button" className="btn btn-ghost" onClick={() => { setPerson(""); setStatus(""); setModule(""); }}>Clear</button>}
-      </div>
-      {feed.loading && !items && <Loading label="Loading the live feed" />}
-      {feed.error && !items && <ErrorState message={feed.error} onRetry={feed.reload} />}
-      {items && items.length === 0 && <Empty title="No shared sessions yet">Sessions appear here as soon as an agent finishes a response with the hook installed.</Empty>}
-      <div className="cards">
-        {all.map((item) => (
-          <Card key={item.key} item={item} now={now} warnings={warningsFor(item)} changed={changed.has(item.key)} onOpen={onOpen} onModule={setModule} />
-        ))}
-      </div>
+      <section className="list-card" aria-label="Sessions">
+        <div className="toolbar">
+          <h3>Sessions <span className="count">{visible.length}</span></h3>
+          <FilterChip label="Person" value={person} options={people.map((p) => p.person)} onPick={onPerson} />
+          <FilterChip label="Module" value={module} options={data.modules.data?.modules ?? []} onPick={onModule} />
+        </div>
+        {all && visible.length === 0 ? (
+          <div style={{ padding: 20 }}>
+            <Empty icon={Radio} title={all.length === 0 ? "No shared sessions yet" : "No sessions match these filters"}>
+              {all.length === 0 ? "Sessions appear here as soon as an agent finishes a response with the hook installed." : "Clear a filter or pick another tile to see more."}
+            </Empty>
+          </div>
+        ) : (
+          <SessionList groups={groups} closed={closed} onToggle={toggle} cursor={cursor} warnings={warnings} changed={changed} now={now} onOpen={onOpen} onModule={onModule} onCursor={setCursor} scrollKey={scrollKey} />
+        )}
+      </section>
     </div>
   );
 }

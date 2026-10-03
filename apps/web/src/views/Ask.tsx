@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { ArrowUp, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { AskResponse } from "@mesh/server/api";
 import { api } from "../api";
 import { Avatar, Empty, ErrorState } from "../components/bits";
@@ -11,7 +12,7 @@ interface Turn {
   error?: string;
 }
 
-export function Ask({ workspace, onOpen }: { workspace: string; onOpen: (id: string) => void }) {
+export function Ask({ workspace, onOpen, seed, onSeed }: { workspace: string; onOpen: (id: string) => void; seed: string | null; onSeed: () => void }) {
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
@@ -43,10 +44,18 @@ export function Ask({ workspace, onOpen }: { workspace: string; onOpen: (id: str
     }
   };
 
+  const submitRef = useRef(submit);
+  submitRef.current = submit;
+  useEffect(() => {
+    if (!seed) return;
+    onSeed();
+    void submitRef.current(seed);
+  }, [seed]);
+
   return (
     <div className="view ask">
       {turns.length === 0 && (
-        <Empty title="Ask about the team's work">Answers come only from shared reports and exit-interview answers, with the sessions they cite.</Empty>
+        <Empty icon={Sparkles} title="Ask about the team's work">Answers come only from shared reports and exit-interview answers, with the sessions they cite.</Empty>
       )}
       <div className="turns">
         {turns.map((t, i) => (
@@ -62,7 +71,7 @@ export function Ask({ workspace, onOpen }: { workspace: string; onOpen: (id: str
                 <div className="citations">
                   {t.answer.sources.map((s) => (
                     <button key={s.session_pk} type="button" className="citation" onClick={() => onOpen(s.event_id ?? String(s.session_pk))}>
-                      <Avatar name={s.person} />
+                      <Avatar name={s.person} size={26} />
                       <span><strong>{s.person}</strong> · {s.task ?? "session"} <span className="muted">{day(s.last_report_at ?? s.last_seen_at)}</span></span>
                     </button>
                   ))}
@@ -76,11 +85,11 @@ export function Ask({ workspace, onOpen }: { workspace: string; onOpen: (id: str
         ))}
       </div>
       <div className="suggestions">
-        {suggestions.map((s) => <button key={s} type="button" className="chip chip-suggest" onClick={() => submit(s)}>{s}</button>)}
+        {suggestions.map((s) => <button key={s} type="button" className="suggest" onClick={() => submit(s)}><Sparkles size={14} />{s}</button>)}
       </div>
       <form className="ask-box" onSubmit={(e) => submit(question, e)}>
         <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask what someone is doing, why something works the way it does, or what failed before" />
-        <button type="submit" className="btn btn-primary" disabled={busy || !question.trim()}>{busy ? "Asking…" : "Ask"}</button>
+        <button type="submit" className="btn btn-primary" disabled={busy || !question.trim()} aria-label="Ask">{busy ? "Asking…" : <ArrowUp size={18} />}</button>
       </form>
     </div>
   );

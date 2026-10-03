@@ -1,78 +1,135 @@
 import { useEffect, useState } from "react";
-import { api, MOCK } from "./api";
+import { MOCK, api } from "./api";
+import { PageHead } from "./components/bits";
+import { CommandPalette } from "./components/CommandPalette";
 import { Drawer } from "./components/Drawer";
-import { useHashRoute, useLoad, useStored } from "./hooks";
+import { ShortcutsHelp } from "./components/ShortcutsHelp";
+import { Sidebar } from "./components/shell/Sidebar";
+import { Topbar } from "./components/shell/Topbar";
+import { Empty } from "./components/bits";
+import { useDashboard } from "./dashboard";
+import { useHashRoute, useLoad, useNow, useStored } from "./hooks";
+import { VIEWS } from "./nav";
+import { useShortcuts } from "./shortcuts";
 import { Ask } from "./views/Ask";
 import { Collisions } from "./views/Collisions";
 import { ExitInterview } from "./views/ExitInterview";
 import { Feed } from "./views/Feed";
 import { Onboarding } from "./views/Onboarding";
-
-const VIEWS = [
-  { id: "feed", label: "Live feed", icon: "◉" },
-  { id: "collisions", label: "Collisions", icon: "⇄" },
-  { id: "ask", label: "Ask", icon: "?" },
-  { id: "exit", label: "Exit interview", icon: "↗" },
-  { id: "onboarding", label: "Onboarding", icon: "◎" },
-] as const;
+import { Inbox } from "lucide-react";
 
 export function App() {
   const [route, go] = useHashRoute();
   const [workspace, setWorkspace] = useStored("mesh.workspace", "");
+  const [collapsedFlag, setCollapsedFlag] = useStored("mesh.collapsed", "");
   const [eventId, setEventId] = useState<string | null>(null);
+  const [person, setPerson] = useState("");
+  const [module, setModule] = useState("");
+  const [palette, setPalette] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [seed, setSeed] = useState<string | null>(null);
+  const now = useNow(15_000);
+
   const health = useLoad(() => api.health(), [], 5000);
   const spaces = useLoad(() => api.workspaces(), [], 15_000);
+  const data = useDashboard(workspace);
   const online = health.data !== false && !health.error;
   const list = spaces.data?.workspaces ?? [];
+  const collapsed = collapsedFlag === "1";
+  const view = VIEWS.find((v) => v.id === route) ?? VIEWS[0]!;
 
   useEffect(() => {
     const first = list[0];
     if (first && !list.some((w) => w.workspace === workspace)) setWorkspace(first.workspace);
   }, [list.map((w) => w.workspace).join(), workspace]);
 
-  const view = VIEWS.find((v) => v.id === route) ?? VIEWS[0];
-  const props = { workspace, onOpen: setEventId };
+  useEffect(() => {
+    setPerson("");
+    setModule("");
+  }, [workspace]);
+
+  useShortcuts([
+    { keys: "mod+k", run: () => setPalette(true) },
+    { keys: "/", run: () => setPalette(true) },
+    { keys: "?", run: () => setHelp(true) },
+    { keys: "[", run: () => setCollapsedFlag(collapsed ? "" : "1") },
+    ...VIEWS.map((v) => ({ keys: v.keys, run: () => go(v.id) })),
+  ]);
+
+  const openEvent = setEventId;
+  const askMesh = (q: string) => {
+    setSeed(q);
+    go("ask");
+  };
 
   return (
-    <div className="shell">
-      <nav className="nav">
-        <div className="brand"><span className="brand-mark">◆</span> Mesh</div>
-        {VIEWS.map((v) => (
-          <button key={v.id} type="button" className={`nav-item${v.id === view.id ? " nav-active" : ""}`} onClick={() => go(v.id)}>
-            <span className="nav-icon">{v.icon}</span>{v.label}
-          </button>
-        ))}
-        <div className="nav-foot">PM seat · no repo needed</div>
-      </nav>
+    <div className={`shell${collapsed ? " shell-collapsed" : ""}`}>
+      <Sidebar
+        view={view.id}
+        go={go}
+        collapsed={collapsed}
+        toggle={() => setCollapsedFlag(collapsed ? "" : "1")}
+        modules={data.modules.data?.modules ?? []}
+        activeModule={module}
+        onModule={(m) => { setModule(m); go("feed"); }}
+        onMore={() => setPalette(true)}
+        online={online}
+        demo={MOCK}
+        onHelp={() => setHelp(true)}
+      />
       <div className="main">
-        <header className="topbar">
-          <h1>{view.label}</h1>
-          <div className="topbar-right">
-            <label className="workspace">
-              <span>Workspace</span>
-              <select value={workspace} onChange={(e) => setWorkspace(e.target.value)}>
-                {list.length === 0 && <option value="">none yet</option>}
-                {list.map((w) => <option key={w.workspace} value={w.workspace}>{w.workspace} · {w.people} people</option>)}
-              </select>
-            </label>
-            <span className={`conn ${online ? "conn-on" : "conn-off"}`}>{MOCK ? "Demo data" : online ? "Connected" : "Offline"}</span>
-          </div>
-        </header>
-        <div className="privacy">Shared reports only. Private sessions are never shown.</div>
-        {!online && !MOCK && <div className="offline">The Mesh server is unreachable. Showing the last data we had; retrying every few seconds.</div>}
-        {workspace ? (
-          <main className="content">
-            {view.id === "feed" && <Feed {...props} />}
-            {view.id === "collisions" && <Collisions {...props} />}
-            {view.id === "ask" && <Ask {...props} />}
-            {view.id === "exit" && <ExitInterview workspace={workspace} />}
-            {view.id === "onboarding" && <Onboarding {...props} />}
-          </main>
-        ) : (
-          <main className="content"><div className="state state-empty"><strong>{spaces.loading ? "Loading workspaces…" : "No workspace has shared reports yet"}</strong><p>Install the hook with <code>mesh init</code> and finish one agent response.</p></div></main>
-        )}
+        <Topbar
+          workspaces={list}
+          workspace={workspace}
+          onWorkspace={setWorkspace}
+          warnings={data.warnings.data}
+          people={data.people.data}
+          person={person}
+          onPerson={(p) => { setPerson(p); go("feed"); }}
+          onWarnings={() => go("collisions")}
+          onOpen={openEvent}
+          onSearch={() => setPalette(true)}
+          online={online}
+          demo={MOCK}
+          onHelp={() => setHelp(true)}
+          now={now}
+        />
+        <main className="page">
+          {!online && !MOCK && <div className="offline">The Mesh server is unreachable. Showing the last data we had; retrying every few seconds.</div>}
+          {view.id !== "feed" && <PageHead title={view.label} subtitle={view.subtitle} />}
+          {!workspace ? (
+            <Empty icon={Inbox} title={spaces.loading ? "Loading workspaces…" : "No workspace has shared reports yet"}>
+              Install the hook with <code>mesh init</code> and finish one agent response.
+            </Empty>
+          ) : (
+            <>
+              {view.id === "feed" && <Feed workspace={workspace} data={data} person={person} module={module} onPerson={setPerson} onModule={setModule} onOpen={openEvent} />}
+              {view.id === "collisions" && <Collisions data={data} onOpen={openEvent} />}
+              {view.id === "ask" && <Ask workspace={workspace} onOpen={openEvent} seed={seed} onSeed={() => setSeed(null)} />}
+              {view.id === "exit" && <ExitInterview workspace={workspace} />}
+              {view.id === "onboarding" && <Onboarding workspace={workspace} onOpen={openEvent} />}
+            </>
+          )}
+        </main>
       </div>
-      {eventId && workspace && <Drawer workspace={workspace} eventId={eventId} onClose={() => setEventId(null)} onOpen={setEventId} />}
+      {eventId && workspace && <Drawer workspace={workspace} eventId={eventId} onClose={() => setEventId(null)} onOpen={openEvent} />}
+      {palette && (
+        <CommandPalette
+          onClose={() => setPalette(false)}
+          go={go}
+          people={(data.people.data?.people ?? []).map((p) => p.person)}
+          modules={data.modules.data?.modules ?? []}
+          sessions={data.feed.data?.items ?? []}
+          workspaces={list.map((w) => w.workspace)}
+          onPerson={setPerson}
+          onModule={setModule}
+          onOpen={openEvent}
+          onWorkspace={setWorkspace}
+          onAsk={askMesh}
+          onHelp={() => setHelp(true)}
+        />
+      )}
+      {help && <ShortcutsHelp onClose={() => setHelp(false)} />}
     </div>
   );
 }

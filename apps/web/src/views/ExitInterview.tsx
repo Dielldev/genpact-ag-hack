@@ -1,3 +1,4 @@
+import { DoorOpen } from "lucide-react";
 import { useState } from "react";
 import { PersonStatus } from "@mesh/contract";
 import type { ExitQuestion } from "@mesh/server/api";
@@ -21,8 +22,8 @@ function QuestionCard({ q, onSave }: { q: ExitQuestion; onSave: (answer: string)
   return (
     <article className={`question-card${state === "saved" ? " question-saved" : ""}`}>
       <div className="question-head">
-        {q.module && <span className="chip chip-module">{q.module}</span>}
-        <span className="muted">based on {q.source_event_ids.length} report{q.source_event_ids.length === 1 ? "" : "s"}</span>
+        {q.module && <span className="tag tag-mono">{q.module}</span>}
+        <span className="muted small">based on {q.source_event_ids.length} report{q.source_event_ids.length === 1 ? "" : "s"}</span>
       </div>
       <p className="question-text">{q.question}</p>
       {q.rationale && <p className="muted small">{q.rationale}</p>}
@@ -85,7 +86,7 @@ export function ExitInterview({ workspace }: { workspace: string }) {
         )}
       </div>
       {people.error && <ErrorState message={people.error} onRetry={people.reload} />}
-      {!person && <Empty title="Capture what a departing person knows">Pick someone to see the areas only they know well and the questions built from their own reports.</Empty>}
+      {!person && <Empty icon={DoorOpen} title="Capture what a departing person knows">Pick someone to see the areas only they know well and the questions built from their own reports.</Empty>}
       {person && interview.loading && !data && <Loading />}
       {interview.error && <ErrorState message={interview.error} onRetry={interview.reload} />}
       {data && (

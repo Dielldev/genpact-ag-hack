@@ -1,3 +1,4 @@
+import { BookOpen } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api";
 import { Avatar, Empty, ErrorState, Loading, Section, StatusChip } from "../components/bits";
@@ -24,7 +25,7 @@ export function Onboarding({ workspace, onOpen }: { workspace: string; onOpen: (
           </span>
         )}
       </div>
-      {!module && <Empty title="Get up to speed on any module">History, dead ends, decisions and exit-interview answers, even when the owner has gone.</Empty>}
+      {!module && <Empty icon={BookOpen} title="Get up to speed on any module">History, dead ends, decisions and exit-interview answers, even when the owner has gone.</Empty>}
       {module && res.loading && !g && <Loading />}
       {res.error && <ErrorState message={res.error} onRetry={res.reload} />}
       {g && (
@@ -61,7 +62,7 @@ export function Onboarding({ workspace, onOpen }: { workspace: string; onOpen: (
               {g.files_to_read.length === 0 ? <p className="muted">No files recorded.</p> : <ol className="files">{g.files_to_read.map((f) => <li key={f.ref}><code>{f.ref}</code><span className="muted">{f.sessions} sessions</span></li>)}</ol>}
             </Section>
             <Section title="People" count={g.contributors.length}>
-              <ul className="people">{g.contributors.map((c) => <li key={c.person}><Avatar name={c.person} /><span><strong>{c.person}</strong> <span className="muted">{c.sessions} sessions{c.status !== "active" ? ` · ${c.status}` : ""}</span></span></li>)}</ul>
+              <ul className="people">{g.contributors.map((c) => <li key={c.person}><Avatar name={c.person} size={30} /><span><strong>{c.person}</strong> <span className="muted">{c.sessions} sessions{c.status !== "active" ? ` · ${c.status}` : ""}</span></span></li>)}</ul>
             </Section>
             {g.open_work.length > 0 && (
               <Section title="Open right now" count={g.open_work.length}>

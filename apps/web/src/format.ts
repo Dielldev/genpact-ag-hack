@@ -63,3 +63,17 @@ export function initials(name: string): string {
     .slice(0, 2)
     .toUpperCase();
 }
+
+export function hueOf(name: string): number {
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) % 360;
+  return hash;
+}
+
+export function firstName(name: string): string {
+  return name.split(/\s+/)[0] ?? name;
+}
+
+export function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}

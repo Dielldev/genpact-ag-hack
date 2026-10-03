@@ -1,0 +1,72 @@
+.tiles { display: flex; justify-content: center; gap: clamp(14px, 4.4vw, 64px); padding: 12px 24px 44px; margin: 0 -24px -30px; overflow-x: auto; scrollbar-width: none; }
+.tile { position: relative; width: 104px; height: 112px; flex: none; border: 1px solid transparent; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-tile); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--ink-3); font-size: 12.5px; font-weight: 500; transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, color 0.18s; }
+.tile svg { color: var(--brand); }
+.tile:hover { transform: translateY(-3px); color: var(--ink-2); }
+.tile-on { border-color: var(--brand-100); color: var(--brand); box-shadow: 0 22px 44px -12px rgba(108, 63, 240, 0.4); transform: translateY(-3px); background: linear-gradient(180deg, #fff, #faf7ff); }
+.tile-count { position: absolute; top: 8px; right: 8px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--brand-50); color: var(--brand); font-size: 11px; font-weight: 600; display: grid; place-items: center; }
+.tile-alert .tile-count { background: var(--red-50); color: var(--red); }
+.tile-warm .tile-count { background: var(--amber-50); color: var(--amber); }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 8px 40px; margin-top: 44px; padding: 0 clamp(0px, 5vw, 56px); }
+.hero-main { min-width: 0; display: grid; gap: 6px; }
+.hero-title-row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.hero-title { font-family: var(--display); font-weight: 300; font-size: clamp(30px, 3.8vw, 46px); letter-spacing: -0.035em; line-height: 1.1; }
+.hero-title sup { font-size: 0.4em; font-weight: 500; color: var(--brand); letter-spacing: 0; vertical-align: super; margin-left: 4px; }
+.hero-arrows { display: flex; gap: 10px; }
+.arrow-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); display: grid; place-items: center; box-shadow: 0 6px 16px -8px rgba(27, 26, 46, 0.18); transition: color 0.15s, transform 0.15s; }
+.arrow-btn:hover:not(:disabled) { color: var(--brand); transform: translateY(-1px); }
+.arrow-btn:disabled { color: var(--ink-3); opacity: 0.5; cursor: default; }
+.hero-sub { color: var(--ink-2); font-size: 13px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.hero-stats { align-self: center; display: grid; gap: 26px; }
+.hero-stat { display: flex; align-items: center; gap: 16px; }
+.stat-ico { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.stat-ico-pink { background: var(--pink-50); color: var(--pink); }
+.stat-ico-brand { background: var(--brand-100); color: var(--brand); }
+.stat-ico-grey { background: #eef0f4; color: #8b90a0; }
+.hero-stat strong { display: block; font-family: var(--display); font-weight: 600; font-size: 24px; line-height: 1.1; letter-spacing: -0.02em; }
+.hero-stat span.label { color: var(--ink-2); font-size: 13px; }
+
+.graph { width: 100%; height: auto; display: block; margin-top: 4px; overflow: visible; }
+.graph-edge { fill: none; stroke: #b9a9ea; stroke-width: 1.4; opacity: 0.6; transition: stroke 0.25s, opacity 0.25s, stroke-width 0.25s; }
+.graph-edge-hot { stroke: var(--brand); opacity: 0.85; stroke-width: 2; }
+.graph-edge-clash { stroke: var(--crimson); stroke-dasharray: 5 4; opacity: 0.8; }
+.graph-edge-dim { opacity: 0.15; }
+.graph-node { cursor: pointer; transition: opacity 0.25s; }
+.graph-node .body { transform-box: fill-box; transform-origin: center; transition: transform 0.3s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.graph-node:hover .body { transform: scale(1.1); }
+.graph-node-on .body { transform: scale(1.5); }
+.graph-node-on:hover .body { transform: scale(1.55); }
+.graph-node-dim { opacity: 0.45; }
+.graph-name { font-size: 11px; font-weight: 500; fill: var(--ink-2); text-anchor: middle; pointer-events: none; }
+.graph-node-on .graph-name { fill: var(--ink); font-weight: 600; }
+.graph-pulse { fill: none; stroke: var(--gold); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; animation: pulse 2.2s ease-out infinite; }
+@keyframes pulse { 0% { opacity: 0.7; transform: scale(1); } 100% { opacity: 0; transform: scale(2.1); } }
+
+.cards2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 36px; }
+.chart-card { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-card); padding: 20px 24px 18px; display: grid; gap: 14px; min-width: 0; }
+.chart-head { display: flex; justify-content: space-between; align-items: center; }
+.chart-head h3 { font-family: var(--display); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; }
+.period { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--ink-2); font-size: 12px; padding: 4px 6px; border-radius: 8px; }
+.period:hover { background: var(--brand-50); color: var(--brand); }
+.chart-body { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 12px; align-items: end; }
+.chart-big { display: grid; gap: 8px; align-self: end; padding-bottom: 20px; }
+.chart-big strong { font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: -0.02em; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.pill i { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-style: normal; }
+.pill-up { color: var(--green); }
+.pill-up i { background: var(--green-50); }
+.pill-down { color: var(--crimson); }
+.pill-down i { background: var(--pink-50); }
+.pill-flat { color: var(--ink-3); }
+.pill-flat i { background: var(--line); }
+
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-stats { grid-auto-flow: column; justify-content: space-between; gap: 12px; }
+  .cards2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .hero-stats { grid-auto-flow: row; }
+  .chart-body { grid-template-columns: 1fr; }
+  .chart-big { padding-bottom: 0; grid-auto-flow: column; justify-content: start; align-items: center; }
+}

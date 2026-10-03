@@ -1,6 +1,7 @@
 import type { AskResponse, EventRecord, EventResponse, ExitInterviewResponse, FeedResponse, OnboardingResponse, PeopleResponse, WarningsResponse, WorkspacesResponse } from "@mesh/server/api";
 import type { MeshClient, ModulesResponse } from "../api";
 import raw from "./snapshot.json";
+import { backdate, minutesFor } from "./spread";
 
 interface Space {
   feed: FeedResponse;
@@ -23,6 +24,11 @@ function shift<T>(value: T): T {
 }
 
 const data = shift(raw as unknown as { workspaces: WorkspacesResponse; spaces: Record<string, Space> });
+for (const s of Object.values(data.spaces)) {
+  s.feed.items = s.feed.items.map((i) => backdate(i, minutesFor(i.session_pk)));
+  for (const r of Object.values(s.events)) r.event = backdate(r.event, minutesFor(r.event.session_pk));
+  s.warnings.warnings = s.warnings.warnings.map((w) => backdate(w, minutesFor(w.warning_id)));
+}
 const space = (ws: string): Space => {
   const s = data.spaces[ws];
   if (!s) throw new Error(`No demo data for ${ws}`);
