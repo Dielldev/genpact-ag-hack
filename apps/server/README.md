@@ -5,7 +5,9 @@ One process that serves the REST API, the remote MCP server (Streamable HTTP at 
 Not built yet. What it must implement for the hook and CLI to work:
 
 - [Server contract](../../docs/server-contract.md): REST endpoints, the `report_progress` MCP tool, expected behaviour
-- [Database](../../docs/database.md): Postgres schema and the query behind each feature
+- [Database](../../docs/database.md): Postgres schema, the RPC functions the server calls, and how to change them
+
+The database layer is in `supabase/migrations/`. Run `pnpm --filter @mesh/server test` to check it.
 
 Import every shared type and enum from `@mesh/contract`. Do not redefine them here.
 
