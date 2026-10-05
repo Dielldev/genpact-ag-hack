@@ -1,67 +1,65 @@
 # Mesh
 
-Mesh turns AI-agent work into live, queryable team knowledge. Every time an agent finishes a response it reports what it did, why, what failed and what blocks it. PMs, teammates and other agents can ask questions of that shared record, and the server warns agents about collisions and known dead ends while the work is still in flight.
+Mesh turns AI-agent work into live, queryable team knowledge.
 
-## Layout
+When your AI agent (Claude Code, Codex, Cursor or Gemini CLI) finishes a task, Mesh records what it did, why, what failed and what is blocked. Your team sees it live, can ask questions about it, and gets warned when two people are about to clash or repeat a dead end.
+
+![Mesh live feed](docs/images/dashboard.png)
+
+## How it works
+
+1. **Install the hook** on your computer. It connects Mesh to your agent.
+2. **Work as usual.** Each time the agent finishes a response, it sends a short report to Mesh through the Mesh MCP server. Only shared reports are visible to the team. Private sessions are never shown.
+3. **Everyone sees it.** The web app shows a live feed, lets you ask questions in plain language, and flags collisions between people and known dead ends.
 
 ```
-apps/
-  server/      REST API + remote MCP server + Postgres (Supabase) + intelligence
-  web/         PM web app: live feed, ask box, collision cards, exit interview
-packages/
-  contract/    shared types, enums and routes used by everything else
-  cli/         `mesh` installer and the hook that runs after every agent response
-docs/
-  server-contract.md   what the server must expose for the hook to work
-  database.md          Postgres schema and queries
-  deploy.md            Supabase, team keys and Vercel, step by step
+your agent  --hook + MCP-->  Mesh server  -->  web app (live feed, ask, collisions)
 ```
 
-## Getting started
+## Get the MCP and hook
 
-### Install the hook on a computer
+You need Node.js 20 or newer. Your team admin gives you the site address and your personal key.
 
-Needs Node.js 20 or newer. Nothing else.
+1. Open your team's Mesh site and paste your key.
+2. Open the profile menu and choose **Install the hook**.
+3. Copy the command for your system and run it.
 
-Windows (PowerShell):
-
-```powershell
-irm https://github.com/Dielldev/genpact-ag-hack/releases/latest/download/install.ps1 | iex
-```
-
-Or download `install-mesh.cmd` from the [latest release](https://github.com/Dielldev/genpact-ag-hack/releases/latest) and double-click it.
+The command looks like this.
 
 macOS and Linux:
 
 ```bash
-curl -fsSL https://github.com/Dielldev/genpact-ag-hack/releases/latest/download/install.sh | sh
+curl -fsSL https://YOUR-SITE/install.sh | MESH_KEY=YOUR-KEY sh
 ```
 
-The installer downloads the prebuilt hook, verifies its SHA-256 checksums, and connects every detected agent CLI. To skip the questions, set the values first, for example in PowerShell:
+Windows (PowerShell):
 
 ```powershell
-$env:MESH_SERVER = "https://mesh.example.com"; $env:MESH_WORKSPACE = "acme"; irm https://github.com/Dielldev/genpact-ag-hack/releases/latest/download/install.ps1 | iex
+$env:MESH_KEY="YOUR-KEY"; irm https://YOUR-SITE/install.ps1 | iex
 ```
 
-`MESH_CLIENTS=claude-code,cursor` limits which CLIs are connected. See [packages/cli/README.md](packages/cli/README.md) for how the hook works in each client.
+Then restart your agent and work as usual. Your sessions show up in the web app within seconds.
 
-### Develop
+To check the connection at any time: `node ~/.mesh/bin/cli.mjs status`
 
-Requires Node 20+ and pnpm (`corepack enable` sets it up from the `packageManager` field).
+## What is in this repo
+
+```
+apps/server/        REST API, MCP server, database (Supabase), intelligence
+apps/web/           web app: live feed, ask, collisions, exit interview
+packages/cli/       the installer and the hook
+packages/contract/  shared types used by everything else
+docs/               deploy guide, database schema, server contract
+```
+
+## Run it yourself
+
+Set up Supabase and Vercel with the step-by-step guide in [docs/deploy.md](docs/deploy.md).
+
+For development (Node 20+ and pnpm):
 
 ```bash
 pnpm install
 pnpm build
 pnpm test
 ```
-
-Pushing a `v*` tag builds and publishes a release with the hook and the install scripts.
-
-## Scripts
-
-| Command | What it does |
-|---|---|
-| `pnpm build` | Builds every package that has a build script |
-| `pnpm dev` | Runs every package's dev script in parallel |
-| `pnpm typecheck` | Builds the contract, then typechecks everything |
-| `pnpm test` | Builds, then runs every package's tests |
